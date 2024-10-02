@@ -198,7 +198,3 @@ trabajo y la eficiencia del sistema.
 [Montblanczone](https://montblanczone.com/es/que-hace-el-comando-sleep-en-linux/)
 
 [Hostgator](https://www.hostgator.mx/blog/comando-watch-linux/)
-
-[InfoLinux](https://infolinux.es monitorizacion-en-tiempo-real-dominando-el-comando-watch-en-linux/)
-
-[RedesZone](https://www.redeszone.net/tutoriales/servidores cron-crontab-linux-programar-tareas/)
