@@ -17,7 +17,7 @@ timezone: Europe/Madrid
 
 title: Blog personal # the main title
 
-tagline: Descubriendo el futuro de la tecnología y la administración de sistemas. # it will display as the subtitle
+tagline: "Los mejores programas son aquellos que funcionan." # it will display as the subtitle
 
 description: >- # used by seo meta and the atom feed
   A minimal, responsive and feature-rich Jekyll theme for technical writing.
