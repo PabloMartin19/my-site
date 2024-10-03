@@ -16,11 +16,13 @@ git add .
 git commit -m "Actualización del sitio $(date)"
 
 # Construir el sitio Jekyll
-bundle exec jekyll build
+JEKYLL_ENV=production bundle exec jekyll build
 
-# Copiar la carpeta _site al repositorio de despliegue
+# Copiar todo el contenido necesario al repositorio de despliegue
 rm -rf $DEPLOY_REPO/*
 cp -R _site/* $DEPLOY_REPO/
+cp -R assets $DEPLOY_REPO/
+cp -R _javascript $DEPLOY_REPO/
 
 # Navegar al repositorio de despliegue
 cd $DEPLOY_REPO
