@@ -13,7 +13,7 @@ cd /home/pavlo/github/pablomartin19.github.io
 find . -maxdepth 1 ! -name .git ! -name . ! -name .. -exec rm -rf {} +
 
 # Copia el contenido generado al repositorio de despliegue
-cp -R /home/pavlo/web/jekyll-theme-chirpy/_site .
+cp -R /home/pavlo/web/jekyll-theme-chirpy/_site/* .
 
 # Añade los cambios al repositorio de despliegue
 git add .
