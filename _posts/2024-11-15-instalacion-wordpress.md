@@ -216,7 +216,7 @@ Ahora deberías poder acceder a WordPress escribiendo `http://wordpress.pablo.be
 
 Una vez configurado el servidor, el virtualhost y los permisos, es momento de acceder a la interfaz de instalación de WordPress y configurar el sitio. Aquí tienes los pasos detallados:
 
-**1.** Accede a la URL de instalación
+**Accede a la URL de instalación**
 
 Abre tu navegador web y accede al dominio configurado en tu archivo `/etc/hosts`:
 
@@ -226,4 +226,105 @@ http://wordpress.pablo.beer
 
 Deberías ver la pantalla inicial de configuración de WordPress:
 
-[Instalación de WordPress](assets/img/posts/wordpress/wordpress2.png)
+![image1](/assets/img/posts/wordpress/wordpress1.png)
+
+El instalador nos pide que elijamos un idioma para el sitio. Selecciona el deseado (por ejemplo, Español) y haz clic en Continuar.
+
+**Configura la conexión con la base de datos**
+
+En la siguiente pantalla, deberás proporcionar los datos de conexión a la base de datos:
+
+- **Nombre de la base de datos**: `wordpress_db` (la base de datos que creaste).
+- **Nombre de usuario**: `user` (el usuario que configuraste).
+- **Contraseña**: La contraseña asignada al usuario.
+- **Servidor de la base de datos**: `localhost`.
+- **Prefijo de tabla**: Por defecto es `wp_`. Puedes cambiarlo si lo deseas, pero no es obligatorio.
+
+Haz clic en **Enviar**.
+
+![image2](/assets/img/posts/wordpress/wordpress2.png)
+
+**Configura los datos del sitio web**
+
+Rellena el formulario con la información básica del sitio:
+
+- **Título del sitio**: El nombre de tu blog o página.
+- **Nombre de usuario**: El nombre para el administrador del sitio.
+- **Contraseña**: Una contraseña segura para el usuario administrador.
+- **Correo electrónico**: Un correo asociado al administrador.
+- **Privacidad**: Puedes elegir si deseas que los motores de búsqueda indexen tu sitio (puedes cambiar esto más adelante).
+
+Haz clic en Instalar WordPress.
+
+![image3](/assets/img/posts/wordpress/wordpress3.png)
+
+**Accede al panel de administración**
+
+Cuando la instalación se complete, WordPress te redirigirá a la pantalla de inicio de sesión.
+
+![image4](/assets/img/posts/wordpress/wordpress4.png)
+
+Si queremos acceder al panel de administración lo haremos desde `http://wordpress.pablo.beer/wp-admin`. Ingresa tu nombre de usuario y contraseña creados en el paso anterior y ya estaríamos dentro.
+
+**Primer blog**
+
+Una vez dentro del panel de administración:
+
+- En el menú de la izquierda, haz clic en **Entradas**.
+- Luego, selecciona **Añadir nueva**.
+
+En la pantalla de creación de la entrada escribe el contenido de tu blog:
+
+- **Título**: Escribe un título para tu entrada, como por ejemplo Mi primera entrada en el blog.
+- **Contenido**: En el editor, puedes escribir el cuerpo de tu entrada. Puedes incluir texto, imágenes, enlaces, videos, etc.
+
+El editor de WordPress es muy intuitivo y funciona mediante bloques:
+
+- Haz clic en el botón `+` para añadir bloques como párrafos, encabezados, imágenes, etc.
+- Arrastra y organiza los bloques según necesites.
+
+Antes de publicar, puedes ajustar algunos parámetros:
+
+- **Estado**: Puedes guardar como borrador si no estás listo para publicarla.
+- **Visibilidad**: Define si la entrada será pública, privada o protegida con contraseña.
+- **Publicación programada**: Puedes programar la publicación para una fecha y hora futura.
+
+Cuando estés listo:
+
+- Haz clic en el botón **Publicar** en la parte superior derecha.
+- Confirma la publicación en el cuadro de diálogo que aparece.
+
+Tu entrada estará disponible en el blog y visible para los visitantes.
+
+Después de publicar, haz clic en el enlace Ver entrada para ver cómo se ve en tu sitio.
+
+![image5](/assets/img/posts/wordpress/wordpress5.png)
+
+# Configurar URL amigables en WordPress
+
+Las **URL amigables** (también conocidas como "permalinks") son direcciones web fáciles de leer y entender, lo que mejora la experiencia del usuario y también el SEO (posicionamiento en buscadores). En lugar de tener URLs como `http://tu-sitio.com/?p=123`, con URL amigables, las URLs serán algo como `http://tu-sitio.com/mi-primera-entrada`.
+
+
+**Pasos para configurar URL amigables en WordPress**
+
+**1.** **Accede al panel de administración de WordPress.** Abre tu navegador y accede a tu sitio de WordPress (por ejemplo: `http://wordpress.tunombre.algo/wp-admin`).
+
+**2.** **Configura los enlaces permanentes.**
+
+- En el menú lateral izquierdo, ve a **Ajustes** > **Enlaces permanentes**.
+
+- Aquí verás diferentes opciones para configurar cómo se verán las URLs de tus entradas. Puedes elegir entre varias opciones como:
+    
+    - Predeterminado: `http://tu-sitio.com/?p=123`
+
+    - Día y nombre: `http://tu-sitio.com/2024/11/15/mi-primera-entrada`
+    
+    - Mes y nombre: `http://tu-sitio.com/2024/11/mi-primera-entrada`
+    
+    - Nombre de la entrada: `http://tu-sitio.com/mi-primera-entrada` (más recomendado)
+
+- Selecciona la opción `Nombre de la entrada` si deseas tener URLs amigables, y luego haz clic en `Guardar cambios`.
+
+![image6](/assets/img/posts/wordpress/wordpress6.png)
+
+¡Y eso es todo! Ahora tu sitio WordPress debería estar configurado para usar URL amigables, mejorando tanto la accesibilidad para los usuarios como el SEO. Con esta configuración, podrás disfrutar de una navegación más fluida y profesional.🚀
