@@ -11,13 +11,13 @@ image:
   path: assets/img/posts/wordpress/portada_wordpress.png
 ---
 
-# ¿Qué vas a aprender en este taller?
+## ¿Qué vas a aprender en este taller?
 
 - Realizar la instalación de un servidor LEMP.
 - Configurar nginx como proxy inverso para pasar las peticiones PHP al servidor de aplicación fpm-php.
 - Realizar la instalación de un CMS PHP WordPress.
 
-# Instalación de la pila LEMP
+## Instalación de la pila LEMP
 
 En este taller configuraremos una máquina virtual con Debian 12 y un servidor LEMP.
 
@@ -51,7 +51,7 @@ pablo@debian:~$ sudo apt install php-fpm php-mysql php-xml php-mbstring php-curl
 
 Y listo, con estos pasos ya tendrás instalada y configurada la pila LEMP.
 
-# Creación de la base de datos
+## Creación de la base de datos
 
 En este paso, configuraremos la base de datos necesaria para WordPress. Esto incluye crear una base de datos específica, un usuario asociado y otorgarle los permisos necesarios. A continuación, te explico el proceso:
 
@@ -102,7 +102,7 @@ EXIT;
 
 Ahora tienes una base de datos llamada `wordpress_db` y un usuario `user` con todos los privilegios sobre ella. Estos datos serán utilizados durante la configuración de WordPress.
 
-# Configurar un VirtualHost para WordPress
+## Configurar un VirtualHost para WordPress
 
 En este paso, crearemos y configuraremos un virtualhost en **nginx** para que el sitio web de WordPress sea accesible a través de un dominio local como `wordpress.pablo.beer`. A continuación, los pasos detallados:
 
@@ -212,7 +212,7 @@ pablo@debian:~$ sudo systemctl restart nginx
 
 Ahora deberías poder acceder a WordPress escribiendo `http://wordpress.pablo.beer` en tu navegador. Desde ahí podrás completar la instalación de WordPress en el navegador.
 
-# Instalación de WordPress
+## Instalación de WordPress
 
 Una vez configurado el servidor, el virtualhost y los permisos, es momento de acceder a la interfaz de instalación de WordPress y configurar el sitio. Aquí tienes los pasos detallados:
 
@@ -300,7 +300,7 @@ Después de publicar, haz clic en el enlace Ver entrada para ver cómo se ve en 
 
 ![image5](/assets/img/posts/wordpress/wordpress5.png)
 
-# Configurar URL amigables en WordPress
+## Configurar URL amigables en WordPress
 
 Las **URL amigables** (también conocidas como "permalinks") son direcciones web fáciles de leer y entender, lo que mejora la experiencia del usuario y también el SEO (posicionamiento en buscadores). En lugar de tener URLs como `http://tu-sitio.com/?p=123`, con URL amigables, las URLs serán algo como `http://tu-sitio.com/mi-primera-entrada`.
 
