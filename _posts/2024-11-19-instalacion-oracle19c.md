@@ -160,8 +160,6 @@ Dejaré el **link de descarga** de este paquete `.deb` para que puedas instalar 
 
 [Mega](https://mega.nz/folder/EgQzyQDR#HumPGeghjeLgikfy2TLD3A)
 
-Una vez descargado, nos tendremos que pasar
-
 Una vez que hayas descargado el archivo .deb de Oracle 19c, el siguiente paso es transferir este fichero a la máquina virtual donde realizarás la instalación. Para ello, utilizaremos el comando scp (Secure Copy), que es una herramienta segura para transferir archivos entre sistemas a través de SSH.
 
 El comando que he utilizado es el siguiente:
