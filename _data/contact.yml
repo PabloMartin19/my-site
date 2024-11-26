@@ -1,14 +1,15 @@
 #  The contact options.
 
 - type: github
-  icon: "fab fa-github"
+  icon: "fa-brands fa-github"
 
 - type: instagram
   icon: "fa-brands fa-instagram"
 
 - type: email
-  icon: "fas fa-envelope"
+  icon: "fa-solid fa-envelope" # Consistente con Font Awesome
   noblank: true # open link in current tab
+
 
 #- type: rss
 #  icon: "fas fa-rss"
