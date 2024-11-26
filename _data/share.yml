@@ -1,20 +1,17 @@
 #  Sharing options at the bottom of the post.
 #  Icons from <https://fontawesome.com/>
 
-#  Sharing options at the bottom of the post.
-#  Icons from <https://fontawesome.com/>
-
 platforms:
-  - type: instagram
-    icon: "fa-brands fa-instagram"
-    link: "https://www.instagram.com/pablomartin_100/"
+  - type: Twitter
+    icon: "fa-brands fa-square-x-twitter"
+    link: "https://twitter.com/intent/tweet?text=TITLE&url=URL"
 
-  - type: facebook
-    icon: "fa-brands fa-facebook-square"
+  - type: Facebook
+    icon: "fab fa-facebook-square"
     link: "https://www.facebook.com/sharer/sharer.php?title=TITLE&u=URL"
 
-  - type: telegram
-    icon: "fa-brands fa-telegram"
+  - type: Telegram
+    icon: "fab fa-telegram"
     link: "https://t.me/share/url?url=URL&text=TITLE"
 
   # Uncomment below if you need to.
