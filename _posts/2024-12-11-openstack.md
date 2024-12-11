@@ -291,7 +291,7 @@ users:
 final_message: "Instancia configurada correctamente."
 ```
 
-Este fichero esta destinado a la configuración de la instancia *luffy*
+Este fichero esta destinado a la configuración de la instancia *luffy*.
 
 #### Creación de las instancias
 
@@ -454,7 +454,7 @@ Para hacer las reglas persistentes instalamos el siguiente paquete:
 sudo apt install iptables-persistent
 ```
 
-En la misma instlación si detecta reglas existentes las guarda automáticamente, aunque si añadimos otras reglas debemos hacerlo manualmente.
+En la misma instalación si detecta reglas existentes las guarda automáticamente, aunque si añadimos otras reglas debemos hacerlo manualmente.
 
 Con esto, ya habríamos terminado la instalación y configuración al completo del router luffy.
 
