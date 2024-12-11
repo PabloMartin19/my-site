@@ -1,6 +1,6 @@
 ---
 title: "Escenario en OpenStack"
-date: 2024-12-11 20:00:00 +0000
+date: 2024-12-11 19:00:00 +0000
 categories: [Servicios, Cloud]
 tags: [Cloud]
 author: pablo
