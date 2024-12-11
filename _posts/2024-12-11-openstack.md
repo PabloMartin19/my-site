@@ -240,8 +240,237 @@ Luego creamos la subnet indicando que no queremos dhcp ni puerta de enlace:
 
 Aunque no configuramos la puerta de enlace en la red (para evitar que cloud-init lo haga automáticamente), las instancias pueden configurarla manualmente si es necesario.
 
-La dirección 172.16.0.1 será la puerta de enlace predeterminada que los dispositivos pueden usar.
+La dirección `172.16.0.1` será la puerta de enlace predeterminada que los dispositivos pueden usar.
 
 ![image2](/assets/img/posts/openstack/proyecto.png)
 
-kk
+### Instalación de las instancias de OpenStack
+
+#### Configuración de las instancias
+
+Las dos instancias que vamos a crear se van a configurar con `cloud-init` de la siguiente manera:
+
+- Deben actualizar los paquetes de la distribución de la instancia.
+
+- El dominio utilizado será del tipo `tunombre.gonzalonazareno.org`. Por lo tanto en la configuración con `cloud-init` habrá que indicar el hostname y el FQDN. 
+
+- Se crearán dos usuarios:
+
+  - Un usuario sin privilegios. Se puede llamar como quieras (pero el nombre será el mismo en todas las máquinas) y accederás a las máquinas usando tu clave ssh privada.
+
+  - Un usuario `profesor`, que puede utilizar `sudo` sin contraseña. Copia de las claves públicas de todos los profesores en las instancias para que puedan acceder con el usuario `profesor`.
+
+- Cambia la contraseña al usuario `root`.
+
+Bueno pues para ello debemos crear el fichero `cloud-init-luffy.yaml` en donde añadiremos las configuraciones que se pide:
+
+```yaml
+#cloud-config
+package_update: true
+package_upgrade: true
+
+hostname: luffy
+fqdn: luffy.pablo.gonzalonazareno.org
+
+users:
+  - name: pablo
+    shell: /bin/bash
+    sudo: ['ALL=(ALL) NOPASSWD:ALL']
+    ssh_authorized_keys:
+      - "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABgQClFcnIhYd1oaEpvGi/f4psQc4+DaAZvSNIxVRRJHtRoJui8wbJybi3Om8yTOflgEcmBaUrJLkfmzmWqVq1j6MpESq72p7J2hdq2lXnvzdt3huYv5evFwyd0p/r72RfpVZzr3ILi/BS//SJqfVKlDEVbZRaOE5MU2XuElmFFY4EO7NiiZAkbatVqUOT8H/nrfXcad0mjZVxroVqHhsHV+06rxiB0xifG0xZv204Qj4zRura8uqZlEVAAwU+NO/SIGdRwpLY7n7xbQGe1DbjHgPUeVPjJX6HpMK41a43eGj4XYdYtZBLugaU8Mq1y6Kl3tE6cvYkQ9WFTYTLLNy3bvNRZpP2p6qAy5qn03ZLFICiXBNXPmrl5+KVrKaSipNaPHkmInvczbYJjXpfyVBsfEabt+0Y1629M+eEKkkl+iZmVr2ySDSS1gHxMC7zlJRaUhG27o26agpNPYPHH3mVXVjqdGg0ryH0YHZk1V8+Gt1Z9hZ7UYWE1UX8DCgFfecqdX0= pavlo@debian"
+  - name: profesor
+    shell: /bin/bash
+    sudo: ['ALL=(ALL) NOPASSWD:ALL']
+    ssh_authorized_keys:
+      - "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQCmjoVIoZCx4QFXvljqozXGqxxlSvO7V2aizqyPgMfGqnyl0J9YXo6zrcWYwyWMnMdRdwYZgHqfiiFCUn2QDm6ZuzC4Lcx0K3ZwO2lgL4XaATykVLneHR1ib6RNroFcClN69cxWsdwQW6dpjpiBDXf8m6/qxVP3EHwUTsP8XaOV7WkcCAqfYAMvpWLISqYme6e+6ZGJUIPkDTxavu5JTagDLwY+py1WB53eoDWsG99gmvyit2O1Eo+jRWN+mgRHIxJTrFtLS6o4iWeshPZ6LvCZ/Pum12Oj4B4bjGSHzrKjHZgTwhVJ/LDq3v71/PP4zaI3gVB9ZalemSxqomgbTlnT jose@debian"
+      - "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABgQDf9lnBH2nCT2ezpDZnqSBeDuSsVGGFD1Kzqa4KyIVkzkrD7pNHHkkpSuO4isKcCsUcopYOcA38QtG7wB0v/qn8Jsq731N8bjaKOdQN25vqLjwVj8DpYtvGc+ZA0uaChe7TS+QBzlMC9ypwj4wf15Q/z3v/ip4FF2cORT0cQC04cNRQDgUg4p1rlOs8+ma7OPh3P3UvzlPfLhi2H1yl+/mo4XLOcAMNr/jiZCwYxom6OEOYVBNk8MZX/Zn+qRi71D0RPiKg27AcXSD/FPWdQW9hBH1Zq5xGicUFS4C9yXvHKru7cMmmxV2G80p/ArRscKWq92UT5jIJQpccmHxsxdIi6o25LhcxH1dOnZy6kHcJ2yP24CnBHK5Y3SsovCD0Th6MN1VlTySbl8Ar0ypmY+GYO+oVd4bM3ioHzL0AMqYnS29m0UtEDvFEUUoSkOoLK4uSlcvej+OIVp7X5G7oZ56nZZf+qHEgodv++a6vPmhH2ZSgoOj1sE39DK7InuKSqCE= rafa@eco"
+      - "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABgQDASDwvkY5SbIgM+/j14mNQluPV+/HGcM3ZgXrYDWt7zhQKq8KAXqJLs1vw1HcRv5PRV071caZQxV2ssfrNqIDofjSzWM1I1JkVIqIj4NCOsRFsQQFN8HwfkE9ic/X6vRaV+NfkEF+t3VmX2YgBd02ZbmGt53qjDaGMQRS/qxw3MPS+ynf2Fj8ZibT6DZeWnyjEGhFcyrggFWiPDqw77MNaiDr+31SO0TaP1WeIWFMrSwPVMVG1zvSxAQ9L13SQ5XzwK0Xs2A8kBPiZmPuUFRqYlBWeffhUnRPSg4TdOsWqJjEwFb5OwpQmTDCT5z0MSFCNVLV5GGwvvqCrw5jd1Xfdswdqazc8mCaIPIrCmhsiwz7uZvQDYr1HDrKxJ1L8LLo3usp4FM5cCCM5jptK+XffhmIyJSkMrcg6tYawBeNuAiY3dwPRIyKeV1Ku3UUctkN+kbuOpMQ4nSvAK0DyhUiTakc8qMJDNLD8oHhSEp49G2bzsLwFOmaEgb8falVMLyk= javji@Javier"
+  - name: root
+    passwd: "root"
+
+final_message: "Instancia configurada correctamente."
+```
+
+Este fichero esta destinado a la configuración de la instancia *luffy*
+
+#### Creación de las instancias
+
+**máquina1 (luffy)**
+
+- Crea una instancia sobre un volumen de 15Gb (el volumen se crea durante la creación de la instancia), usando una imagen de **Debian 12 Bookworm**. Elige el sabor `vol.medium`. Y configuralá con `cloud-init` como se ha indicado anteriormente.
+
+- Está instancia estará conectada a las dos redes. Recuerda que en la red **Red DMZ** debe tomar la dirección `172.16.0.1` (puerta de enlace las máquinas conectadas a esta red). Asigna a la instancia una IP flotante.
+
+- Deshabilita la seguridad de los puertos en las dos interfaces de red para que funcione de manera adecuada el NAT.
+
+- Configura de forma permanente la regla SNAT para que las máquinas de la **Red DMZ** tengan acceso a internet.
+
+
+En primer lugar debemos crear la instancia:
+
+```bash
+(os) pavlo@debian:~/OpenStack()$ openstack server create luffy \
+> --flavor vol.medium \
+> --image "Debian 12 Bookworm" \
+> --network red-intra-pablo \
+> --network red-dmz-pablo \
+> --user-data cloud-init-luffy.yaml \
+> --boot-from-volume 15 \
+> --security-group default
+```
+
+Luego, le asignamos una IP flotante, para ello:
+
+```shell
+(os) pavlo@debian:~/OpenStack()$ openstack server add floating ip luffy 172.22.200.100
+```
+
+Comprobamos que se hayan añadido las interfaces correctamente:
+
+```shell
+(os) pavlo@debian:~/OpenStack()$ openstack server list
++--------------------------------------+-------+--------+--------------------------------------------------------------------------+--------------------------+------------+
+| ID                                   | Name  | Status | Networks                                                                 | Image                    | Flavor     |
++--------------------------------------+-------+--------+--------------------------------------------------------------------------+--------------------------+------------+
+| 91e29177-4a4f-4529-8594-4f867d2dd6bd | luffy | ACTIVE | red-dmz-pablo=172.16.3.142; red-intra-pablo=10.0.200.181, 172.22.200.100 | N/A (booted from volume) | vol.medium |
++--------------------------------------+-------+--------+--------------------------------------------------------------------------+--------------------------+------------+
+```
+
+Ahora debemos deshabilitar la seguridad de los puertos en las dos interfaces de red, para ello primero obtenemos las IDs de los puertos:
+
+```shell
+(os) pavlo@debian:~/OpenStack()$ openstack port list --server luffy
++--------------------------------------+------+-------------------+-----------------------------------------------------------------------------+--------+
+| ID                                   | Name | MAC Address       | Fixed IP Addresses                                                          | Status |
++--------------------------------------+------+-------------------+-----------------------------------------------------------------------------+--------+
+| 1505f6e0-7c0f-47d3-b865-1a5420c69246 |      | fa:16:3e:d9:cb:6a | ip_address='172.16.3.142', subnet_id='450496f9-646a-42a4-9a8e-b07b5b3a992d' | ACTIVE |
+| 3168307f-1878-4306-a1c3-81256a9dd85a |      | fa:16:3e:ff:1e:6d | ip_address='10.0.200.181', subnet_id='7ef74cd9-63bf-4b2e-8479-69250a4a087b' | ACTIVE |
++--------------------------------------+------+-------------------+-----------------------------------------------------------------------------+--------+
+```
+
+Y una vez sabemos las IDs ya podemos deshabilitarlos:
+
+```shell
+(os) pavlo@debian:~/OpenStack()$ openstack port set 1505f6e0-7c0f-47d3-b865-1a5420c69246 --no-security-group --disable-port-security
+```
+
+```shell
+(os) pavlo@debian:~/OpenStack()$ openstack port set 3168307f-1878-4306-a1c3-81256a9dd85a --no-security-group --disable-port-security
+```
+
+Antes de aceder al router (luffy) y realizar el SNAT voy a añadir en el `~/.ssh/config` la máquina para poder conectarme de forma más sencilla:
+
+```shell
+Host luffy
+  HostName 172.22.200.100
+  User pablo
+  ForwardAgent yes
+```
+
+De forma que ya puedo acceder a la instancia:
+
+```shell
+(os) pavlo@debian:~/OpenStack()$ ssh luffy 
+Linux luffy 6.1.0-28-amd64 #1 SMP PREEMPT_DYNAMIC Debian 6.1.119-1 (2024-11-22) x86_64
+
+The programs included with the Debian GNU/Linux system are free software;
+the exact distribution terms for each program are described in the
+individual files in /usr/share/doc/*/copyright.
+
+Debian GNU/Linux comes with ABSOLUTELY NO WARRANTY, to the extent
+permitted by applicable law.
+Last login: Wed Dec 11 22:48:14 2024 from 172.29.0.34
+pablo@luffy:~$
+```
+
+Una vez accedido a luffy habilitamos el bit de forwarding en el fichero `/etc/sysctl.conf`, en donde descomentamos la siguiente línea:
+
+```shell
+net.ipv4.ip_forward=1
+```
+
+Aplicamos los cambios:
+```shell
+pablo@luffy:~$ sudo sysctl -p
+net.ipv4.ip_forward = 1
+```
+
+Ahora debemos configurar la reglas SNAT con `iptables`, pero antes miramos las direcciones IP de las interfaces:
+
+```bash
+pablo@luffy:~$ ip a
+1: lo: <LOOPBACK,UP,LOWER_UP> mtu 65536 qdisc noqueue state UNKNOWN group default qlen 1000
+    link/loopback 00:00:00:00:00:00 brd 00:00:00:00:00:00
+    inet 127.0.0.1/8 scope host lo
+       valid_lft forever preferred_lft forever
+    inet6 ::1/128 scope host noprefixroute 
+       valid_lft forever preferred_lft forever
+2: ens3: <BROADCAST,MULTICAST,UP,LOWER_UP> mtu 1442 qdisc fq_codel state UP group default qlen 1000
+    link/ether fa:16:3e:8c:07:52 brd ff:ff:ff:ff:ff:ff
+    altname enp0s3
+    inet 10.0.200.231/24 metric 100 brd 10.0.200.255 scope global dynamic ens3
+       valid_lft 42718sec preferred_lft 42718sec
+    inet6 fe80::f816:3eff:fe8c:752/64 scope link 
+       valid_lft forever preferred_lft forever
+3: ens4: <BROADCAST,MULTICAST,UP,LOWER_UP> mtu 1442 qdisc fq_codel state UP group default qlen 1000
+    link/ether fa:16:3e:67:5a:49 brd ff:ff:ff:ff:ff:ff
+    altname enp0s4
+    inet 172.16.0.16/16 brd 172.16.255.255 scope global ens4
+       valid_lft forever preferred_lft forever
+    inet6 fe80::f816:3eff:fe67:5a49/64 scope link 
+       valid_lft forever preferred_lft forever
+```
+
+En base a esta configuración de interfaces de red:
+
+- `ens3`: Interfaz conectada a la red interna (`red-intra-pablo`, 10.0.200.0/24).
+- `ens4`: Interfaz conectada a la red DMZ (`red-dmz-pablo`, 172.16.0.0/16).
+
+Dado esto, necesitamos configurar las reglas SNAT para que el tráfico desde Red DMZ pueda salir a Internet a través de ens3. Para ello:
+
+```bash
+sudo iptables -t nat -A POSTROUTING -o ens3 -s 172.16.0.0/16 -j MASQUERADE
+```
+
+De forma que quede así:
+```bash
+pablo@luffy:~$ sudo iptables -t nat -L -v
+Chain PREROUTING (policy ACCEPT 0 packets, 0 bytes)
+ pkts bytes target     prot opt in     out     source               destination         
+
+Chain INPUT (policy ACCEPT 0 packets, 0 bytes)
+ pkts bytes target     prot opt in     out     source               destination         
+
+Chain OUTPUT (policy ACCEPT 0 packets, 0 bytes)
+ pkts bytes target     prot opt in     out     source               destination         
+
+Chain POSTROUTING (policy ACCEPT 0 packets, 0 bytes)
+ pkts bytes target     prot opt in     out     source               destination         
+    0     0 MASQUERADE  all  --  any    ens3    172.16.0.0/16        anywhere
+```
+
+Para hacer las reglas persistentes instalamos el siguiente paquete:
+```bash
+sudo apt install iptables-persistent
+```
+
+En la misma instlación si detecta reglas existentes las guarda automáticamente, aunque si añadimos otras reglas debemos hacerlo manualmente.
+
+Con esto, ya habríamos terminado la instalación y configuración al completo del router luffy.
+
+
+**maquina2 (zoro)**
+
+- Crea un volumen de 15Gb con la imagen `Rocky Linux 9`.
+
+- Crea la instancia a partir de este volumen. Elige el sabor `vol.medium`. Y configúrala con `cloud-init` como se ha indicado anteriormente.
+
+- En un primer momento, para que la instancia se configure mediante cloud-init conecta esta instancia a un red con DHCP.
+
+- Posteriormente, desconecta la interfaz de red de esa red y conéctala a la red **Red DMZ** a la dirección `172.16.0.200`.  
+
+- Recuerda, que esa configuración no se hará de forma automática por lo que deberas, de forma manual, configurar la red en esta máquina. recuerda que Rocky Linux tiene instalado por defecto NetwokManager.
+
+- Deshabilita la seguridad de los puertos en la interfaz de red para que funcione de manera adecuada el NAT.
+
+- Comprueba que tiene acceso a internet.
