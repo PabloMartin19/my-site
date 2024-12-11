@@ -8,7 +8,7 @@ description: "En esta tarea se va a crear el escenario de trabajo que se va a us
 toc: true
 comments: true
 image:
-  path: /assets/img/posts/openstack/OpenStack-logo.png
+  path: /assets/img/posts/openstack/openstack.png
 ---
 
 ## Práctica (1 / 2): Escenario en OpenStack
