@@ -244,4 +244,4 @@ La dirección 172.16.0.1 será la puerta de enlace predeterminada que los dispos
 
 ![image2](/assets/img/posts/openstack/proyecto.png)
 
-kk2
+kk
