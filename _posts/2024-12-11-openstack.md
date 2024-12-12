@@ -238,7 +238,7 @@ Luego creamos la subnet indicando que no queremos dhcp ni puerta de enlace:
 +----------------------+--------------------------------------+
 ```
 
-Aunque no configuramos la puerta de enlace en la red (para evitar que cloud-init lo haga automáticamente), las instancias pueden configurarla manualmente si es necesario.
+Aunque no configuramos la puerta de enlace en la red (para evitar que cloud-init lo haga automáticamente), las instancias se pueden configurar manualmente si es necesario.
 
 La dirección `172.16.0.1` será la puerta de enlace predeterminada que los dispositivos pueden usar.
 
@@ -736,3 +736,72 @@ rtt min/avg/max/mdev = 17.086/17.607/17.958/0.325 ms
 Ya habríamos terminado la primera parte del escenario de OpenStack, quedando la topología de la siguiente forma:
 ![image3](/assets/img/posts/openstack/proyecto2.png)
 
+Si queremos hacer algunas comprobaciones como por ejemplo acceder a los FQDN del otro, tendremos que configurar los `/etc/hosts`:
+
+```bash
+pablo@luffy:~$ cat /etc/hosts
+127.0.0.1	localhost
+::1		localhost ip6-localhost ip6-loopback
+ff02::1		ip6-allnodes
+ff02::2		ip6-allrouters
+
+172.16.0.16 luffy.pablo.gonzalonazareno.org luffy
+172.16.0.200 zoro.pablo.gonzalonazareno.org zoro
+```
+
+```bash
+[pablo@zoro ~]$ cat /etc/hosts
+127.0.0.1   localhost localhost.localdomain localhost4 localhost4.localdomain4
+::1         localhost localhost.localdomain localhost6 localhost6.localdomain6
+
+172.16.0.16 luffy.pablo.gonzalonazareno.org luffy
+172.16.0.200 zoro.pablo.gonzalonazareno.org zoro
+```
+
+De forma que tenemos conectividad entre ambos:
+
+```bash
+pablo@luffy:~$ ping -c 2 zoro.pablo.gonzalonazareno.org 
+PING zoro.pablo.gonzalonazareno.org (172.16.0.200) 56(84) bytes of data.
+64 bytes from zoro.pablo.gonzalonazareno.org (172.16.0.200): icmp_seq=1 ttl=64 time=2.40 ms
+64 bytes from zoro.pablo.gonzalonazareno.org (172.16.0.200): icmp_seq=2 ttl=64 time=0.510 ms
+
+--- zoro.pablo.gonzalonazareno.org ping statistics ---
+2 packets transmitted, 2 received, 0% packet loss, time 1002ms
+rtt min/avg/max/mdev = 0.510/1.457/2.404/0.947 ms
+```
+
+```bash
+[pablo@zoro ~]$ ping -c 2 luffy.pablo.gonzalonazareno.org
+PING luffy.pablo.gonzalonazareno.org (172.16.0.16) 56(84) bytes of data.
+64 bytes from luffy.pablo.gonzalonazareno.org (172.16.0.16): icmp_seq=1 ttl=64 time=0.218 ms
+64 bytes from luffy.pablo.gonzalonazareno.org (172.16.0.16): icmp_seq=2 ttl=64 time=0.441 ms
+
+--- luffy.pablo.gonzalonazareno.org ping statistics ---
+2 packets transmitted, 2 received, 0% packet loss, time 1026ms
+rtt min/avg/max/mdev = 0.218/0.329/0.441/0.111 ms
+```
+
+Por último, podemos ver que tenemos conectividad a Internet en ambas máquinas:
+
+```bash
+pablo@luffy:~$ ping -c 2 google.com
+PING google.com (142.250.186.78) 56(84) bytes of data.
+64 bytes from fra24s05-in-f14.1e100.net (142.250.186.78): icmp_seq=1 ttl=101 time=40.0 ms
+64 bytes from fra24s05-in-f14.1e100.net (142.250.186.78): icmp_seq=2 ttl=101 time=38.2 ms
+
+--- google.com ping statistics ---
+2 packets transmitted, 2 received, 0% packet loss, time 1002ms
+rtt min/avg/max/mdev = 38.183/39.114/40.045/0.931 ms
+```
+
+```bash
+[pablo@zoro ~]$ ping -c 2 google.com
+PING google.com (142.250.186.78) 56(84) bytes of data.
+64 bytes from fra24s05-in-f14.1e100.net (142.250.186.78): icmp_seq=1 ttl=100 time=40.4 ms
+64 bytes from fra24s05-in-f14.1e100.net (142.250.186.78): icmp_seq=2 ttl=100 time=37.1 ms
+
+--- google.com ping statistics ---
+2 packets transmitted, 2 received, 0% packet loss, time 1001ms
+rtt min/avg/max/mdev = 37.124/38.739/40.355/1.615 ms
+```
