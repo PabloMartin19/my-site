@@ -732,3 +732,7 @@ PING 8.8.8.8 (8.8.8.8) 56(84) bytes of data.
 4 packets transmitted, 4 received, 0% packet loss, time 3005ms
 rtt min/avg/max/mdev = 17.086/17.607/17.958/0.325 ms
 ```
+
+Ya habríamos terminado la primera parte del escenario de OpenStack, quedando la topología de la siguiente forma:
+![image3](/assets/img/posts/openstack/proyecto2.png)
+
