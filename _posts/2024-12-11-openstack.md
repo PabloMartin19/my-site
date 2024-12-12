@@ -291,7 +291,39 @@ users:
 final_message: "Instancia configurada correctamente."
 ```
 
-Este fichero esta destinado a la configuración de la instancia *luffy*.
+Este fichero está destinado a la configuración de la instancia *luffy*.
+
+A continuación, crearé el archivo `cloud-init-zoro.yaml` para la posterior creación de la instancia *zoro*.
+
+```yaml
+#cloud-config
+package_update: true
+package_upgrade: true
+hostname: zoro
+fqdn: zoro.pablo.gonzalonazareno.org
+users:
+  - name: pablo
+    gecos: Usuario sin privilegios
+    groups: []
+    shell: /bin/bash
+    sudo: ['ALL=(ALL) NOPASSWD:ALL']
+    ssh_authorized_keys:
+      - "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABgQClFcnIhYd1oaEpvGi/f4psQc4+DaAZvSNIxVRRJHtRoJui8wbJybi3Om8yTOflgEcmBaUrJLkfmzmWqVq1j6MpESq72p7J2hdq2lXnvzdt3huYv5evFwyd0p/r72RfpVZzr3ILi/BS//SJqfVKlDEVbZRaOE5MU2XuElmFFY4EO7NiiZAkbatVqUOT8H/nrfXcad0mjZVxroVqHhsHV+06rxiB0xifG0xZv204Qj4zRura8uqZlEVAAwU+NO/SIGdRwpLY7n7xbQGe1DbjHgPUeVPjJX6HpMK41a43eGj4XYdYtZBLugaU8Mq1y6Kl3tE6cvYkQ9WFTYTLLNy3bvNRZpP2p6qAy5qn03ZLFICiXBNXPmrl5+KVrKaSipNaPHkmInvczbYJjXpfyVBsfEabt+0Y1629M+eEKkkl+iZmVr2ySDSS1gHxMC7zlJRaUhG27o26agpNPYPHH3mVXVjqdGg0ryH0YHZk1V8+Gt1Z9hZ7UYWE1UX8DCgFfecqdX0= pavlo@debian"
+
+  - name: profesor
+    gecos: Usuario Profesor
+    groups: sudo
+    shell: /bin/bash
+    sudo: ['ALL=(ALL) NOPASSWD:ALL']
+    ssh_authorized_keys:
+      - "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQCmjoVIoZCx4QFXvljqozXGqxxlSvO7V2aizqyPgMfGqnyl0J9YXo6zrcWYwyWMnMdRdwYZgHqfiiFCUn2QDm6ZuzC4Lcx0K3ZwO2lgL4XaATykVLneHR1ib6RNroFcClN69cxWsdwQW6dpjpiBDXf8m6/qxVP3EHwUTsP8XaOV7WkcCAqfYAMvpWLISqYme6e+6ZGJUIPkDTxavu5JTagDLwY+py1WB53eoDWsG99gmvyit2O1Eo+jRWN+mgRHIxJTrFtLS6o4iWeshPZ6LvCZ/Pum12Oj4B4bjGSHzrKjHZgTwhVJ/LDq3v71/PP4zaI3gVB9ZalemSxqomgbTlnT jose@debian"
+      - "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABgQDf9lnBH2nCT2ezpDZnqSBeDuSsVGGFD1Kzqa4KyIVkzkrD7pNHHkkpSuO4isKcCsUcopYOcA38QtG7wB0v/qn8Jsq731N8bjaKOdQN25vqLjwVj8DpYtvGc+ZA0uaChe7TS+QBzlMC9ypwj4wf15Q/z3v/ip4FF2cORT0cQC04cNRQDgUg4p1rlOs8+ma7OPh3P3UvzlPfLhi2H1yl+/mo4XLOcAMNr/jiZCwYxom6OEOYVBNk8MZX/Zn+qRi71D0RPiKg27AcXSD/FPWdQW9hBH1Zq5xGicUFS4C9yXvHKru7cMmmxV2G80p/ArRscKWq92UT5jIJQpccmHxsxdIi6o25LhcxH1dOnZy6kHcJ2yP24CnBHK5Y3SsovCD0Th6MN1VlTySbl8Ar0ypmY+GYO+oVd4bM3ioHzL0AMqYnS29m0UtEDvFEUUoSkOoLK4uSlcvej+OIVp7X5G7oZ56nZZf+qHEgodv++a6vPmhH2ZSgoOj1sE39DK7InuKSqCE= rafa@eco"
+      - "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABgQDASDwvkY5SbIgM+/j14mNQluPV+/HGcM3ZgXrYDWt7zhQKq8KAXqJLs1vw1HcRv5PRV071caZQxV2ssfrNqIDofjSzWM1I1JkVIqIj4NCOsRFsQQFN8HwfkE9ic/X6vRaV+NfkEF+t3VmX2YgBd02ZbmGt53qjDaGMQRS/qxw3MPS+ynf2Fj8ZibT6DZeWnyjEGhFcyrggFWiPDqw77MNaiDr+31SO0TaP1WeIWFMrSwPVMVG1zvSxAQ9L13SQ5XzwK0Xs2A8kBPiZmPuUFRqYlBWeffhUnRPSg4TdOsWqJjEwFb5OwpQmTDCT5z0MSFCNVLV5GGwvvqCrw5jd1Xfdswdqazc8mCaIPIrCmhsiwz7uZvQDYr1HDrKxJ1L8LLo3usp4FM5cCCM5jptK+XffhmIyJSkMrcg6tYawBeNuAiY3dwPRIyKeV1Ku3UUctkN+kbuOpMQ4nSvAK0DyhUiTakc8qMJDNLD8oHhSEp49G2bzsLwFOmaEgb8falVMLyk= javji@Javier"
+chpasswd:
+  list: |
+    root:root
+  expire: False
+```
 
 #### Creación de las instancias
 
@@ -458,7 +490,6 @@ En la misma instalación si detecta reglas existentes las guarda automáticament
 
 Con esto, ya habríamos terminado la instalación y configuración al completo del router luffy.
 
-
 **maquina2 (zoro)**
 
 - Crea un volumen de 15Gb con la imagen `Rocky Linux 9`.
@@ -474,3 +505,64 @@ Con esto, ya habríamos terminado la instalación y configuración al completo d
 - Deshabilita la seguridad de los puertos en la interfaz de red para que funcione de manera adecuada el NAT.
 
 - Comprueba que tiene acceso a internet.
+
+
+Empezamos creando el volumen a partir de la imagen:
+
+```bash
+(os) pavlo@debian:~/OpenStack()$ openstack volume create --size 15 --image "Rocky Linux 9" volumen-zoro
++---------------------+------------------------------------------------------------------+
+| Field               | Value                                                            |
++---------------------+------------------------------------------------------------------+
+| attachments         | []                                                               |
+| availability_zone   | nova                                                             |
+| bootable            | false                                                            |
+| consistencygroup_id | None                                                             |
+| created_at          | 2024-12-12T07:44:39.479661                                       |
+| description         | None                                                             |
+| encrypted           | False                                                            |
+| id                  | 786b9400-013c-4bf3-9986-1896891628bf                             |
+| multiattach         | False                                                            |
+| name                | volumen-zoro                                                     |
+| properties          |                                                                  |
+| replication_status  | None                                                             |
+| size                | 15                                                               |
+| snapshot_id         | None                                                             |
+| source_volid        | None                                                             |
+| status              | creating                                                         |
+| type                | lvmdriver-1                                                      |
+| updated_at          | None                                                             |
+| user_id             | a74499e28f7622936621adb74c2b02fe4a18a1f6964a32bdbb23af09b776065f |
++---------------------+------------------------------------------------------------------+
+```
+
+Seguidamente creamos la instancia a partir del volumen, conectándola en un principio a una red con DHCP como `red-intra-pablo`.
+
+```bash
+(os) pavlo@debian:~/OpenStack()$ openstack server create zoro \
+    --flavor vol.medium \
+    --volume volumen-zoro \
+    --network red-intra-pablo \
+    --user-data cloud-init-zoro.yaml \
+    --security-group default
+```
+
+Comprobamos que se haya creado correctamente:
+
+```bash
+(os) pavlo@debian:~/OpenStack()$ openstack server list
++--------------------------------------+-------+--------+-------------------------------------------------------------------------+--------------------------+------------+
+| ID                                   | Name  | Status | Networks                                                                | Image                    | Flavor     |
++--------------------------------------+-------+--------+-------------------------------------------------------------------------+--------------------------+------------+
+| 82692c6d-9d36-4bdd-86b6-46e90bea1892 | zoro  | ACTIVE | red-intra-pablo=10.0.200.132                                            | N/A (booted from volume) | vol.medium |
+| 9c9e8c12-7712-404e-aa3b-2e2bf566ca0c | luffy | ACTIVE | red-dmz-pablo=172.16.0.16; red-intra-pablo=10.0.200.231, 172.22.200.100 | N/A (booted from volume) | vol.medium |
++--------------------------------------+-------+--------+-------------------------------------------------------------------------+--------------------------+------------+
+```
+
+Ya que se ha creado la instancia y el cloud-init se ha configurado correctamente, apagamos la máquina y le quitamos la interfaz:
+```bash
+(os) pavlo@debian:~/OpenStack()$ openstack server stop zoro
+```
+```bash
+(os) pavlo@debian:~/OpenStack()$ openstack server remove network zoro red-intra-pablo
+```
