@@ -559,10 +559,176 @@ Comprobamos que se haya creado correctamente:
 +--------------------------------------+-------+--------+-------------------------------------------------------------------------+--------------------------+------------+
 ```
 
-Ya que se ha creado la instancia y el cloud-init se ha configurado correctamente, apagamos la máquina y le quitamos la interfaz:
-```bash
-(os) pavlo@debian:~/OpenStack()$ openstack server stop zoro
+Ya que se ha creado la instancia y el cloud-init se ha configurado correctamente, añadimos en el fichero `~/.ssh/config` la nueva configuración **temporal**:
+```shell
+Host luffy
+  HostName 172.22.200.100
+  User pablo
+  ForwardAgent yes
+
+Host zoro
+  HostName 10.0.200.244
+  User pablo
+  ForwardAgent yes
+  ProxyJump luffy
 ```
+
+Además, añadimos la nueva interfaz que estará conectada a la **Red DMZ** con la dirección `172.16.0.200`, la que posteriormente vamos a configurar manualmente:
 ```bash
-(os) pavlo@debian:~/OpenStack()$ openstack server remove network zoro red-intra-pablo
+(os) pavlo@debian:~/OpenStack()$ openstack server add port zoro \
+> $(openstack port create --network red-dmz-pablo --fixed-ip subnet=red-dmz-pablo-subnet,ip-address=172.16.0.200 puerto-zoro -f value -c id)
+```
+
+Accedemos a la instancia:
+```bash
+(os) pavlo@debian:~/OpenStack()$ ssh zoro 
+The authenticity of host '10.0.200.244 (<no hostip for proxy command>)' can't be established.
+ED25519 key fingerprint is SHA256:JrbuXBRRZ4JoLGdRCCiKNThDEKWqINQtX2NVLKP7Gvo.
+This host key is known by the following other names/addresses:
+    ~/.ssh/known_hosts:421: [hashed name]
+Are you sure you want to continue connecting (yes/no/[fingerprint])? yes
+Warning: Permanently added '10.0.200.244' (ED25519) to the list of known hosts.
+Last login: Thu Dec 12 07:52:34 2024 from 10.0.200.231
+```
+
+Y hacemos algunas comprobaciones:
+```bash
+[pablo@zoro ~]$ hostname -f
+zoro.pablo.gonzalonazareno.org
+[pablo@zoro ~]$ ip a
+1: lo: <LOOPBACK,UP,LOWER_UP> mtu 65536 qdisc noqueue state UNKNOWN group default qlen 1000
+    link/loopback 00:00:00:00:00:00 brd 00:00:00:00:00:00
+    inet 127.0.0.1/8 scope host lo
+       valid_lft forever preferred_lft forever
+    inet6 ::1/128 scope host 
+       valid_lft forever preferred_lft forever
+2: eth0: <BROADCAST,MULTICAST,UP,LOWER_UP> mtu 1442 qdisc fq_codel state UP group default qlen 1000
+    link/ether fa:16:3e:78:8b:9e brd ff:ff:ff:ff:ff:ff
+    altname enp0s3
+    altname ens3
+3: eth1: <BROADCAST,MULTICAST,UP,LOWER_UP> mtu 1442 qdisc fq_codel state UP group default qlen 1000
+    link/ether fa:16:3e:87:ca:cd brd ff:ff:ff:ff:ff:ff
+    altname enp0s7
+    altname ens7
+    inet 10.0.200.244/24 brd 10.0.200.255 scope global dynamic noprefixroute eth1
+       valid_lft 43120sec preferred_lft 43120sec
+    inet6 fe80::7f34:f482:b58c:edcc/64 scope link noprefixroute 
+       valid_lft forever preferred_lft forever
+```
+
+Como vemos la interfaz `eth0` está sin direccionamiento, por lo que vamos a añadir la IP para luego poder eliminar la `red-intra-pablo`.
+
+Para ello, creamos el fichero `/etc/NetworkManager/system-connections/dmz.nmconnection` con la siguiente configuración:
+```bash
+[connection]
+id=dmz
+type=ethernet
+interface-name=eth0
+
+[ipv4]
+method=manual
+addresses=172.16.0.200/16
+gateway=172.16.0.16
+dns=8.8.8.8;1.1.1.1
+
+[ipv6]
+method=ignore
+```
+
+Seguidamente reiniciamos los servicios:
+```shell
+[pablo@zoro ~]$ sudo nmcli connection reload
+[pablo@zoro ~]$ sudo systemctl restart NetworkManager
+[pablo@zoro ~]$ sudo nmcli connection up dmz
+Connection successfully activated (D-Bus active path: /org/freedesktop/NetworkManager/ActiveConnection/4)
+```
+
+Y ya tenemos dirección IP:
+```shell
+[pablo@zoro ~]$ ip a
+1: lo: <LOOPBACK,UP,LOWER_UP> mtu 65536 qdisc noqueue state UNKNOWN group default qlen 1000
+    link/loopback 00:00:00:00:00:00 brd 00:00:00:00:00:00
+    inet 127.0.0.1/8 scope host lo
+       valid_lft forever preferred_lft forever
+    inet6 ::1/128 scope host 
+       valid_lft forever preferred_lft forever
+2: eth0: <BROADCAST,MULTICAST,UP,LOWER_UP> mtu 1442 qdisc fq_codel state UP group default qlen 1000
+    link/ether fa:16:3e:78:8b:9e brd ff:ff:ff:ff:ff:ff
+    altname enp0s3
+    altname ens3
+    inet 172.16.0.200/16 brd 172.16.255.255 scope global noprefixroute eth0
+       valid_lft forever preferred_lft forever
+    inet6 fe80::f816:3eff:fe78:8b9e/64 scope link 
+       valid_lft forever preferred_lft forever
+3: eth1: <BROADCAST,MULTICAST,UP,LOWER_UP> mtu 1442 qdisc fq_codel state UP group default qlen 1000
+    link/ether fa:16:3e:87:ca:cd brd ff:ff:ff:ff:ff:ff
+    altname enp0s7
+    altname ens7
+    inet 10.0.200.244/24 brd 10.0.200.255 scope global dynamic noprefixroute eth1
+       valid_lft 43193sec preferred_lft 43193sec
+    inet6 fe80::7f34:f482:b58c:edcc/64 scope link noprefixroute 
+       valid_lft forever preferred_lft forever
+```
+
+Ahora, nos salimos de la instancia y revocamos la `red-intra-pablo`:
+
+```bash
+pavlo@debian:~/OpenStack()$ openstack server remove network zoro red-intra-pablo
+```
+
+Más tarde, modificamos el fichero `~/.ssh/config` para que acceda con la nueva IP:
+```bash
+Host luffy
+  HostName 172.22.200.100
+  User pablo
+  ForwardAgent yes
+
+Host zoro
+  HostName 172.16.0.200
+  User pablo
+  ForwardAgent yes
+  ProxyJump luffy
+```
+
+Y ya nos dejaría acceder:
+```shell
+pavlo@debian:~/OpenStack()$ ssh zoro 
+The authenticity of host '172.16.0.200 (<no hostip for proxy command>)' can't be established.
+ED25519 key fingerprint is SHA256:JrbuXBRRZ4JoLGdRCCiKNThDEKWqINQtX2NVLKP7Gvo.
+This host key is known by the following other names/addresses:
+    ~/.ssh/known_hosts:421: [hashed name]
+    ~/.ssh/known_hosts:424: [hashed name]
+Are you sure you want to continue connecting (yes/no/[fingerprint])? yes
+Warning: Permanently added '172.16.0.200' (ED25519) to the list of known hosts.
+Last login: Thu Dec 12 08:30:57 2024 from 10.0.200.231
+[pablo@zoro ~]$
+```
+
+Antes de probar la conexión a Internet debemos deshabilitar la seguridad de los puertos para que el NAT funcione correctamente:
+
+```bash
+pavlo@debian:~/OpenStack()$ openstack port list --server zoro
++--------------------------------------+-------------+-------------------+-----------------------------------------------------------------------------+--------+
+| ID                                   | Name        | MAC Address       | Fixed IP Addresses                                                          | Status |
++--------------------------------------+-------------+-------------------+-----------------------------------------------------------------------------+--------+
+| 3dd6bcc3-0c30-4f37-ae10-3d70767efff1 | puerto-zoro | fa:16:3e:78:8b:9e | ip_address='172.16.0.200', subnet_id='450496f9-646a-42a4-9a8e-b07b5b3a992d' | ACTIVE |
++--------------------------------------+-------------+-------------------+-----------------------------------------------------------------------------+--------+
+```
+
+```bash
+pavlo@debian:~/OpenStack()$ openstack port set 3dd6bcc3-0c30-4f37-ae10-3d70767efff1 --no-security-group --disable-port-security
+```
+
+Pudiendo de esta forma acceder a Internet:
+```bash
+[pablo@zoro ~]$ ping -c 4 8.8.8.8
+PING 8.8.8.8 (8.8.8.8) 56(84) bytes of data.
+64 bytes from 8.8.8.8: icmp_seq=1 ttl=103 time=18.0 ms
+64 bytes from 8.8.8.8: icmp_seq=2 ttl=103 time=17.8 ms
+64 bytes from 8.8.8.8: icmp_seq=3 ttl=103 time=17.6 ms
+64 bytes from 8.8.8.8: icmp_seq=4 ttl=103 time=17.1 ms
+
+--- 8.8.8.8 ping statistics ---
+4 packets transmitted, 4 received, 0% packet loss, time 3005ms
+rtt min/avg/max/mdev = 17.086/17.607/17.958/0.325 ms
 ```
