@@ -222,7 +222,7 @@ Al igual que yo, Jose me ha pasado su clave pública por Discord y como vemos ya
 
 ![image1](/assets/img/posts/gpg/gpgjose.png)
 
-Para importar las claves públicas de otro usuario, utilizaremos la opción `--import` de `gpg`, seguida del nombre del archivo que contiene la clave pública. En este caso, el archivo a importar es el que hemos recibido, por ejemplo, `alejandro_gutierrez.asc`.
+Para importar las claves públicas de otro usuario, utilizaremos la opción `--import` de `gpg`, seguida del nombre del archivo que contiene la clave pública. En este caso, el archivo a importar es el que hemos recibido, por ejemplo, `joseantoniocanalo.asc`.
 
 El comando a ejecutar sería:
 ```bash
