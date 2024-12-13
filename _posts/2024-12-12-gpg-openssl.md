@@ -159,44 +159,6 @@ Cuando generamos un par de claves OpenPGP con GnuPG, se crean por defecto:
 
 La separación entre pares de claves maestros y secundarios permite revocar estos últimos sin afectar a los primeros y almacenarlos por separado. En esencia, los pares de claves secundarios son independientes, pero están vinculados al par maestro.
 
-Cuando ejecutamos `gpg --list-keys`, la salida incluyó información sobre:
-
-- **Claves públicas del par maestro (pub)**.
-- **Claves públicas del par secundario (sub)**.
-
-Al ejecutar `gpg --list-secret-keys`, vimos información sobre:
-
-- **Claves privadas del par maestro (sec)**.
-- **Claves privadas del par secundario (ssb)**.
-
-En ambos casos, también se mostró un **uid** que representa la identidad del usuario asociada a las claves.
-
-La relación entre los pares de claves es la siguiente:
-
-- **pub ↔ sec**: Clave primaria pública y su clave privada asociada.
-- **sub ↔ ssb**: Clave secundaria pública y su clave privada asociada.
-
-Además, la salida incluyó información adicional como:
-
-- El algoritmo utilizado (por ejemplo, `rsa3072`).
-- La fecha de creación del par de claves (por ejemplo, `2020-10-07`).
-- Los flags de las claves.
-- La fecha de caducidad (por ejemplo, `2022-10-07`).
-
-Cada par de claves tiene flags que indican sus funciones:
-
-- **S**: Firmar archivos (Signing).
-- **C**: Certificar claves (Certify).
-- **A**: Autenticarse (Authenticate), como iniciar sesión en una máquina.
-- **E**: Encriptar información (Encrypt).
-
-Por ejemplo:
-
-- El par de claves maestro suele tener los flags **[SC]**, indicando que puede firmar archivos y certificar claves.
-- El par de claves secundario tiene el flag **[E]**, utilizado para encriptar y desencriptar información.
-
-El par de claves maestro es utilizado para firmar y comprobar firmas (**[SC]**), mientras que el par de claves secundario es empleado para encriptar y desencriptar información (**[E]**).
-
 ## Tarea 2: Importar/exportar clave pública (gpg)
 
 ### 1. Exporta tu clave pública en formato ASCII, guárdalo en un archivo “nombre_apellido.asc” y envíalo al compañero con el que vas a hacer esta práctica.
