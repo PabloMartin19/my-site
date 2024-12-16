@@ -1184,3 +1184,36 @@ PING youtube-ui.l.google.com (216.58.206.78) 56(84) bytes of data.
 2 packets transmitted, 2 received, 0% packet loss, time 1002ms
 rtt min/avg/max/mdev = 42.871/43.247/43.624/0.376 ms
 ```
+
+Finalmente comprueba que todo el escenario está funcionando después de reiniciar la **máquina1 (luffy)**.
+
+```bash
+pablo@luffy:~$ sudo reboot
+
+Broadcast message from root@luffy on pts/1 (Mon 2024-12-16 11:15:21 UTC):
+
+The system will reboot now!
+
+pablo@luffy:~$ Connection to 172.22.200.100 closed by remote host.
+Connection to 172.22.200.100 closed.
+pavlo@debian:~()$ ssh nami
+Welcome to Ubuntu 22.04.5 LTS (GNU/Linux 6.1.0-28-amd64 x86_64)
+
+ * Documentation:  https://help.ubuntu.com
+ * Management:     https://landscape.canonical.com
+ * Support:        https://ubuntu.com/pro
+Last login: Mon Dec 16 11:01:53 2024 from 192.168.0.1
+pablo@nami:~$ 
+logout
+Connection to 192.168.0.2 closed.
+pavlo@debian:~()$ ssh sanji
+Welcome to Ubuntu 22.04.5 LTS (GNU/Linux 6.1.0-28-amd64 x86_64)
+
+ * Documentation:  https://help.ubuntu.com
+ * Management:     https://landscape.canonical.com
+ * Support:        https://ubuntu.com/pro
+Last login: Mon Dec 16 11:13:31 2024 from 192.168.0.1
+pablo@sanji:~$ 
+logout
+Connection to 192.168.0.3 closed.
+```
