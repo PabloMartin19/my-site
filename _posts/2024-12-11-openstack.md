@@ -805,3 +805,382 @@ PING google.com (142.250.186.78) 56(84) bytes of data.
 2 packets transmitted, 2 received, 0% packet loss, time 1001ms
 rtt min/avg/max/mdev = 37.124/38.739/40.355/1.615 ms
 ```
+
+## Práctica (2 / 2): Escenario en OpenStack
+
+### Instalación de los contenedores
+
+En **máquina1 (luffy)** vamos a crear dos contenedores en un red interna, para ello:
+
+- Crea en **máquina1 (luffy)** un linux bridge llamado `br-intra` (no lo hagas con `virsh` ya que se configura una reglas de cortafuego muy estrictas) y asigna una dirección IP estática `192.168.0.1`. Esta será la IP de **máquina1 (luffy)** conectada a este switch virtual y será la puerta de enlace de los contenedores. Tienes que tener en cuenta que la imagen de Debian 12 Bookworm de OpenStack tiene **netplan** para la configuración de las redes, por lo tanto tienes que configurar el bridge usando el fichero de configuración de netplan, para ello te puede ser útil esta [página](https://fabianlee.org/2022/09/20/kvm-creating-a-bridged-network-with-netplan-on-ubuntu-22-04/). No olvides poner la mtu a 1442 al crear el bridge.
+
+
+Para crear el puente tendremos que modificar la configuración del fichero **netplan**, en donde añadiremos las siguientes líneas:
+
+```bash
+bridges:
+      br-intra:
+        addresses: [192.168.0.1/24]
+        mtu: 1442
+        dhcp4: no
+        dhcp6: no
+        nameservers:
+          addresses: [172.22.0.1]
+```
+Una vez añadido, aplicamos los cambios:
+
+```bash
+pablo@luffy:~$ sudo netplan generate
+```
+
+```bash
+pablo@luffy:~$ sudo netplan apply
+```
+
+- Instala LXC y crea dos contenedores con la distribución **Ubuntu 22.04**. Estos contenedores serán la **máquina3 (nami)** y la **máquina4 (sanji)**.
+
+Para instalar LXC ejecutamos el siguiente comando:
+
+```bash
+pablo@luffy:~$ sudo apt install lxc
+```
+
+Una vez instalado, pasamos a instalar los contenedores:
+
+- **Nami**
+
+```bash
+pablo@luffy:~$ sudo lxc-create -n nami -t ubuntu -- -r jammy
+```
+
+- **Sanji**
+
+```bash
+pablo@luffy:~$ sudo lxc-create -n sanji -t ubuntu -- -r jammy
+```
+
+- Configura de forma permanente la regla SNAT para que los contenedores tengan acceso a internet.
+
+Para ello es tan simple como añadir la siguiente regla:
+
+```bash
+pablo@luffy:~$ sudo iptables -t nat -A POSTROUTING -s 192.168.0.0/24 -o ens3 -j MASQUERADE
+```
+
+Importante hacer las reglas persistentes para posibles futuros reinicios:
+
+```bash
+pablo@luffy:~$ sudo -i
+root@luffy:~# iptables-save > /etc/iptables/rules.v4
+root@luffy:~# exit
+logout
+```
+
+- Conecta los contenedores al bridge `br-intra` y configúralo de forma estática con las siguientes direcciones: **máquina3 (nami)** la `192.168.0.2` y **máquina4 (sanji)** la `192.168.0.3`. Su DNS será el `172.22.0.1`.
+
+Para la configuración de red modificaremos el fichero `/var/lib/lxc/nombrecontenedor/config`, quedando de la siguiente forma:
+
+```bash
+pablo@luffy:~$ sudo cat /var/lib/lxc/nami/config
+# Template used to create this container: /usr/share/lxc/templates/lxc-ubuntu
+# Parameters passed to the template: -r jammy
+# For additional config options, please look at lxc.container.conf(5)
+
+# Uncomment the following line to support nesting containers:
+#lxc.include = /usr/share/lxc/config/nesting.conf
+# (Be aware this has security implications)
+
+
+# Common configuration
+lxc.include = /usr/share/lxc/config/ubuntu.common.conf
+
+# Container specific configuration
+lxc.apparmor.profile = generated
+lxc.apparmor.allow_nesting = 1
+lxc.rootfs.path = dir:/var/lib/lxc/nami/rootfs
+lxc.uts.name = nami
+lxc.arch = amd64
+
+# Network configuration
+lxc.net.0.type = veth
+lxc.net.0.hwaddr = 00:16:3e:40:e4:da
+lxc.net.0.link = br-intra
+lxc.net.0.flags = up
+lxc.net.0.ipv4.address = 192.168.0.2/24
+lxc.net.0.ipv4.gateway = 192.168.0.1
+```
+
+Los DNS debemos configurarlos dentro del contenedor, para ello:
+
+```bash
+root@nami:/# rm /etc/resolv.conf
+root@nami:/# echo -e "nameserver 172.22.0.1\nnameserver 8.8.8.8" > /etc/resolv.conf
+root@nami:/# cat /etc/resolv.conf 
+nameserver 172.22.0.1
+nameserver 8.8.8.8
+```
+
+En *sanji* añadimos prácticamente la misma configuración:
+
+```bash
+# Network configuration
+lxc.net.0.type = veth
+lxc.net.0.hwaddr = 00:16:3e:c5:5c:70
+lxc.net.0.link = br-intra
+lxc.net.0.flags = up
+lxc.net.0.ipv4.address = 192.168.0.3/24
+lxc.net.0.ipv4.gateway = 192.168.0.1
+```
+
+Antes de acceder tenemos que iniciar los contenedores:
+
+```bash
+pablo@luffy:~$ sudo lxc-start nami
+pablo@luffy:~$ sudo lxc-start sanji
+```
+
+- Para que la red de OpenStack funcione de forma adecuada las imágenes que usamos tienen configurado la mtu (Unidad máxima de transferencia) a 1442 bytes. Tenemos que adecuar los contenedores a este tamaño de trama. Para ello introduce en la configuración de los contenedores la línea: `lxc.net.0.mtu = 1442`.
+
+Para ello tendremos que modificar el fichero **config** de ambos contenedores en donde añadimos esta línea:
+
+```bash
+lxc.net.0.mtu = 1442
+```
+
+Para aplicar los cambios apagamos y encendemos el contenedor:
+
+```bash
+pablo@luffy:~$ sudo lxc-stop -n nami
+pablo@luffy:~$ sudo lxc-start -n nami
+```
+
+```bash
+pablo@luffy:~$ sudo lxc-stop -n sanji
+pablo@luffy:~$ sudo lxc-start -n sanji
+```
+
+- Configura los contenedores para que se auto inicien al reiniciar la instancia.
+
+Para ello añadimos en el archivo **config** mencionado anteriormente la siguiente línea:
+
+```bash
+lxc.start.auto = 1
+```
+
+- Los contenedores tendrán características parecidas a las instancias anteriormente:
+
+  - Debes actualizar los paquetes de la distribución instalada.
+
+  ```bash
+  root@nami:/# apt update
+  ```
+
+  ```bash
+  root@sanji:/# apt update
+  ```
+
+  - El dominio utilizado será del tipo `tunombre.gonzalonazareno.org`. Por lo tanto configura de manera adecuada el hostname y el FQDN.
+
+  **Nami**
+
+  ```bash
+  root@nami:/# cat /etc/hosts
+  127.0.0.1   localhost
+  127.0.1.1   nami.pablo.gonzalonazareno.org nami
+
+  # The following lines are desirable for IPv6 capable hosts
+  ::1     ip6-localhost ip6-loopback
+  fe00::0 ip6-localnet
+  ff00::0 ip6-mcastprefix
+  ff02::1 ip6-allnodes
+  ff02::2 ip6-allrouters
+  ```
+
+  Comprobamos:
+
+  ```bash
+  root@nami:/# hostname
+  nami
+  root@nami:/# hostname -f
+  nami.pablo.gonzalonazareno.org
+  ```
+
+  **Sanji**
+
+  ```bash
+  root@sanji:/# cat /etc/hosts
+  127.0.0.1   localhost
+  127.0.1.1   sanji.pablo.gonzalonazareno.org sanji
+
+  # The following lines are desirable for IPv6 capable hosts
+  ::1     ip6-localhost ip6-loopback
+  fe00::0 ip6-localnet
+  ff00::0 ip6-mcastprefix
+  ff02::1 ip6-allnodes
+  ff02::2 ip6-allrouters
+  ```
+
+  Comprobamos:
+
+  ```bash
+  root@sanji:/# hostname
+  sanji
+  root@sanji:/# hostname -f
+  sanji.pablo.gonzalonazareno.org
+  ```
+
+  - Para acceder a los contenedores vamos a usar ssh.
+
+  - Crea dos usuarios:
+    
+    - Un usuario sin privilegios. Se puede llamar como quieras (el nombre de usuario que usaste en las instancias) y accederás a los contenedores usando tu clave ssh privada.
+
+    ```bash
+    root@nami:/# useradd -m -s /bin/bash pablo
+    ```
+
+    ```bash
+    root@sanji:/# useradd -m -s /bin/bash pablo
+    ```
+
+    Luego, en ambos contenedores añadimos nuestra clave pública dentro del `authorized_keys`:
+
+    ```bash
+    root@sanji:/# su - pablo
+    pablo@sanji:~$ mkdir -p /home/pablo/.ssh
+    pablo@sanji:~$ echo ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABgQClFcnIhYd1oaEpvGi/f4psQc4+DaAZvSNIxVRRJHtRoJui8wbJybi3Om8yTOflgEcmBaUrJLkfmzmWqVq1j6MpESq72p7J2hdq2lXnvzdt3huYv5evFwyd0p/r72RfpVZzr3ILi/BS//SJqfVKlDEVbZRaOE5MU2XuElmFFY4EO7NiiZAkbatVqUOT8H/nrfXcad0mjZVxroVqHhsHV+06rxiB0xifG0xZv204Qj4zRura8uqZlEVAAwU+NO/SIGdRwpLY7n7xbQGe1DbjHgPUeVPjJX6HpMK41a43eGj4XYdYtZBLugaU8Mq1y6Kl3tE6cvYkQ9WFTYTLLNy3bvNRZpP2p6qAy5qn03ZLFICiXBNXPmrl5+KVrKaSipNaPHkmInvczbYJjXpfyVBsfEabt+0Y1629M+eEKkkl+iZmVr2ySDSS1gHxMC7zlJRaUhG27o26agpNPYPHH3mVXVjqdGg0ryH0YHZk1V8+Gt1Z9hZ7UYWE1UX8DCgFfecqdX0= pavlo@debian > /home/pablo/.ssh/authorized_keys
+    pablo@sanji:~$ chown -R pablo:pablo /home/pablo/.ssh
+    pablo@sanji:~$ chmod 700 /home/pablo/.ssh
+    pablo@sanji:~$ chmod 600 /home/pablo/.ssh/authorized_keys
+    ```
+
+    Modificamos también el fichero `/etc/sudoers` para que no pida contraseña a mi usuario *pablo*:
+
+    ```bash
+    # User privilege specification
+    root    ALL=(ALL:ALL) ALL
+    pablo   ALL=(ALL) NOPASSWD:ALL
+    ```
+
+    - Un usuario `profesor`, que puede utilizar `sudo` sin contraseña. Copia de las claves públicas de todos los profesores en los contenedores para que puedan acceder con el usuario `profesor`.
+
+    Añadimos el usuario en ambos contenedores:
+
+    ```bash
+    root@nami:~# useradd -m -s /bin/bash profesor
+    ```
+
+    ```bash
+    root@sanji:~# useradd -m -s /bin/bash profesor
+    ```
+
+    Y repetimos el mismo proceso que anteriormente.
+  
+- Cambia la contraseña al usuario `root`.
+
+```bash
+root@nami:~# passwd root
+New password: 
+Retype new password: 
+passwd: password updated successfully
+```
+
+Ya está todo configurado, solo nos quedaría crear los accesos por ssh, para ello en el fichero `~/.ssh/config` añadimos lo siguiente:
+
+```bash
+pavlo@debian:~()$ cat .ssh/config 
+Host luffy
+  HostName 172.22.200.100
+  User pablo
+  ForwardAgent yes
+
+Host zoro
+  HostName 172.16.0.200
+  User pablo
+  ForwardAgent yes
+  ProxyJump luffy
+
+Host nami
+  HostName 192.168.0.2
+  User pablo
+  ForwardAgent yes
+  ProxyJump luffy
+
+Host sanji
+  HostName 192.168.0.3
+  User pablo
+  ForwardAgent yes
+  ProxyJump luffy
+```
+
+De esta forma, desde nuestro host principal podemos acceder a todas las máquinas, incluyendo los contenedores:
+
+```bash
+pavlo@debian:~()$ ssh nami
+Welcome to Ubuntu 22.04.5 LTS (GNU/Linux 6.1.0-28-amd64 x86_64)
+
+ * Documentation:  https://help.ubuntu.com
+ * Management:     https://landscape.canonical.com
+ * Support:        https://ubuntu.com/pro
+Last login: Mon Dec 16 10:54:43 2024 from 192.168.0.1
+pablo@nami:~$ 
+logout
+Connection to 192.168.0.2 closed.
+pavlo@debian:~()$ ssh sanji
+Welcome to Ubuntu 22.04.5 LTS (GNU/Linux 6.1.0-28-amd64 x86_64)
+
+ * Documentation:  https://help.ubuntu.com
+ * Management:     https://landscape.canonical.com
+ * Support:        https://ubuntu.com/pro
+Last login: Mon Dec 16 10:49:30 2024 from 192.168.0.1
+pablo@sanji:~$
+```
+
+Otras comprobaciones que podemos hacer:
+
+1. La salida del comando `sudo lxc-ls -f`.
+
+```bash
+pablo@luffy:~$ sudo lxc-ls -f
+NAME  STATE   AUTOSTART GROUPS IPV4        IPV6 UNPRIVILEGED 
+nami  RUNNING 0         -      192.168.0.2 -    false        
+sanji RUNNING 1         -      192.168.0.3 -    false
+```
+
+2. Prueba de funcionamiento de que los contenedores tienen acceso a internet accediendo a un nombre de dominio, para comprobar que funciona el DNS.
+
+```bash
+pavlo@debian:~()$ ssh nami
+Welcome to Ubuntu 22.04.5 LTS (GNU/Linux 6.1.0-28-amd64 x86_64)
+
+ * Documentation:  https://help.ubuntu.com
+ * Management:     https://landscape.canonical.com
+ * Support:        https://ubuntu.com/pro
+Last login: Mon Dec 16 10:57:54 2024 from 192.168.0.1
+pablo@nami:~$ ping -c 2 www.google.es
+PING www.google.es (142.250.186.163) 56(84) bytes of data.
+64 bytes from fra24s08-in-f3.1e100.net (142.250.186.163): icmp_seq=1 ttl=100 time=51.8 ms
+64 bytes from fra24s08-in-f3.1e100.net (142.250.186.163): icmp_seq=2 ttl=100 time=38.7 ms
+
+--- www.google.es ping statistics ---
+2 packets transmitted, 2 received, 0% packet loss, time 1001ms
+rtt min/avg/max/mdev = 38.722/45.277/51.832/6.555 ms
+```
+
+```bash
+pavlo@debian:~()$ ssh sanji
+Welcome to Ubuntu 22.04.5 LTS (GNU/Linux 6.1.0-28-amd64 x86_64)
+
+ * Documentation:  https://help.ubuntu.com
+ * Management:     https://landscape.canonical.com
+ * Support:        https://ubuntu.com/pro
+Last login: Mon Dec 16 10:57:59 2024 from 192.168.0.1
+pablo@sanji:~$ ping -c 2 www.youtube.com
+PING youtube-ui.l.google.com (216.58.206.78) 56(84) bytes of data.
+64 bytes from lhr35s11-in-f14.1e100.net (216.58.206.78): icmp_seq=1 ttl=99 time=43.6 ms
+64 bytes from tzfraa-aa-in-f14.1e100.net (216.58.206.78): icmp_seq=2 ttl=99 time=42.9 ms
+
+--- youtube-ui.l.google.com ping statistics ---
+2 packets transmitted, 2 received, 0% packet loss, time 1002ms
+rtt min/avg/max/mdev = 42.871/43.247/43.624/0.376 ms
+```
