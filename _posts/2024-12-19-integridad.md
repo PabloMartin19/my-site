@@ -1,6 +1,6 @@
 ---
 title: "Integridad, firmas y autenticación"
-date: 2024-12-19 18:30:00 +0000
+date: 2024-12-19 17:30:00 +0000
 categories: [Seguridad, Criptografía]
 tags: [Criptografía]
 author: pablo
