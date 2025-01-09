@@ -8,7 +8,7 @@ description: "...."
 toc: true
 comments: true
 image:
-  path: 
+  path: /assets/img/posts/certificado/portada.png
 ---
 
 ## Tarea 1: Instalación del certificado
@@ -129,8 +129,30 @@ Si todo ha salido correctamente nos saldrá el siguiente mensaje:
 
 Como se puede apreciar, se ha indicado que la firma se ha realizado correctamente, por lo que pulsaremos en **Guardar Firma** para así almacenar en nuestra máquina el fichero resultante de dicho proceso. En mi caso, he decidido asignarle el nombre `ficherovalide.txt_firmado.csig`, para así diferenciarlo.
 
+Bien, ya hemos firmado uno de los dos, así que para el siguiente, volveremos a la aplicación de escritorio AutoFirma y elegiremos en éste caso el fichero `ficheroautofirma.txt`. Tras ello, pulsaremos en Firmar y nos pedirá el certificado a usar para la firma, seguido de la ruta donde almacenar el fichero resultante, que en este caso, he decidido asignarle el nombre `ficheroautofirma.txt_firmado.csig`.
+
+Si todo ha funcionado correctamente obtendremos el siguiente mensaje informativo:
+
+![image](/assets/img/posts/certificado/ficheroautofirma.png)
+
+
 ### 2. Tu debes recibir otro documento firmado por un compañero y utilizando las herramientas anteriores debes visualizar la firma (Visualizar Firma) y (Verificar Firma). ¿Puedes verificar la firma aunque no tengas la clave pública de tu compañero?, ¿Es necesario estar conectado a internet para hacer la validación de la firma?. Razona tus respuestas.
+
+Para verificar estas firmas, accederemos a la plataforma VALIDe y seleccionaremos la opción "Validar Firma". 
+
+En esta sección, elegiremos el archivo firmado que deseamos comprobar. En este caso, seleccionaremos el archivo **hola.txt_signed.csig**, completaremos el Captcha solicitado y haremos clic en "Validar". 
+
+Si el proceso se realiza correctamente, obtendremos un mensaje informativo que confirma que la validación ha sido exitosa: 
+
+![image](/assets/img/posts/certificado/joseautofirma.png)
+
+Este mensaje indica que la firma ha sido validada correctamente, lo que certifica que el archivo ha sido firmado por mi compañero, quien no puede negar haber realizado esta acción. Luego, repetiremos el mismo procedimiento con el archivo **hola2.txt_firmado.csig** y obtendremos el siguiente resultado:
+
+![image](/assets/img/posts/certificado/mensajevalidejose.png)
 
 ### 3. Entre dos compañeros, firmar los dos un documento, verificar la firma para comprobar que está firmado por los dos.
 
+![image](/assets/img/posts/certificado/kk.png)
+
+![image](/assets/img/posts/certificado/firmadoporlosdos.png)
 
