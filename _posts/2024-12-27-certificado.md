@@ -156,3 +156,12 @@ Este mensaje indica que la firma ha sido validada correctamente, lo que certific
 
 ![image](/assets/img/posts/certificado/firmadoporlosdos.png)
 
+## Tarea 4: Autentificación
+
+Accedemos a la web de la [DGT](https://sede.dgt.gob.es/es/permisos-de-conducir/permiso-por-puntos/consulta-de-puntos/) para verificar el funcionamiento de nuestro certificado digital accediendo a nuestro historial de puntos.
+
+![image](/assets/img/posts/certificado/dgt.png)
+
+Podremos elegir entre los distintos tipos de acceso y elegimos Cl@ve. Seguidamente, pulsaremos en DNIe / Certificado electrónico y se abrirá una ventana emergente. En dicha ventana emergente tendremos que seleccionar aquel certificado que queremos utilizar para la autenticación, así que en mi caso, seleccionaré el único disponible, de manera que si no ha habido ningún problema, nos habremos autenticado en la página de la Dirección General de Tráfico sin tener que introducir ningún tipo de credenciales:
+
+![image](/assets/img/posts/certificado/puntosdgt.png)
