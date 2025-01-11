@@ -11,6 +11,8 @@ image:
   path: /assets/img/posts/certificado/portada.png
 ---
 
+## Certificado digital de persona física
+
 ## Tarea 1: Instalación del certificado
 
 ### 1. Una vez que hayas obtenido tu certificado, explica brevemente como se instala en tu navegador favorito.
@@ -165,3 +167,391 @@ Accedemos a la web de la [DGT](https://sede.dgt.gob.es/es/permisos-de-conducir/p
 Podremos elegir entre los distintos tipos de acceso y elegimos Cl@ve. Seguidamente, pulsaremos en DNIe / Certificado electrónico y se abrirá una ventana emergente. En dicha ventana emergente tendremos que seleccionar aquel certificado que queremos utilizar para la autenticación, así que en mi caso, seleccionaré el único disponible, de manera que si no ha habido ningún problema, nos habremos autenticado en la página de la Dirección General de Tráfico sin tener que introducir ningún tipo de credenciales:
 
 ![image](/assets/img/posts/certificado/puntosdgt.png)
+
+
+## HTTPS / SSL
+
+Antes de hacer esta práctica vamos a crear una página web (puedes usar una página estática o instalar una aplicación web) en un servidor web apache2 que se acceda con el nombre `tunombre.iesgn.org`.
+
+### Preparación del sitio web
+
+Para realizar este punto, instalaremos un servidor apache, y lo configuraremos para que nos sirva una página web con https. Para ello, deberemos seguir los siguientes pasos:
+
+- Instalamos el servidor:
+
+```bash
+debian@https:~$ sudo apt install apache2
+```
+
+- Deshabilitamos el VirtualHost que viene por defecto para que no nos dé problemas:
+
+```bash
+debian@https:~$ sudo a2dissite 000-default.conf
+Site 000-default disabled.
+To activate the new configuration, you need to run:
+  systemctl reload apache2
+debian@https:~$ sudo systemctl reload apache2
+```
+
+- Creamos un nuevo fichero de configuración donde irá el contenido:
+
+```bash
+debian@https:~$ sudo mkdir /var/www/html/pablo.iesgn.org
+debian@https:~$ sudo nano /var/www/html/pablo.iesgn.org/index.html
+debian@https:~$ cat /var/www/html/pablo.iesgn.org/index.html
+<!DOCTYPE html>
+            <html>
+                <head>
+                <title>pablo.iesgn.org</title>
+                </head>
+            <body>
+                <h1>pablo.iesgn.org</h1>
+                <p>Pagina web sencilla para criptografia - HTTPS/SSL</p>
+            </body>
+        </html>
+```
+
+- Ahora creamos un archivo de configuración para el dominio `pablo.iesgn.org`
+
+```shell
+debian@https:~$ cat /etc/apache2/sites-available/pablo.iesgn.org.conf
+<VirtualHost *:80>
+    ServerName pablo.iesgn.org
+    DocumentRoot /var/www/html/pablo.iesgn.org
+
+    <Directory /var/www/html/pablo.iesgn.org>
+        Options Indexes FollowSymLinks
+        AllowOverride All
+        Require all granted
+    </Directory>
+
+    ErrorLog ${APACHE_LOG_DIR}/pablo.iesgn.org_error.log
+    CustomLog ${APACHE_LOG_DIR}/pablo.iesgn.org_access.log combined
+</VirtualHost>
+```
+
+- Habilitamos el nuevo VirtualHost y reiniciamos el servicio de Apache.
+
+```bash
+debian@https:~$ sudo a2ensite pablo.iesgn.org.conf
+Enabling site pablo.iesgn.org.
+To activate the new configuration, you need to run:
+  systemctl reload apache2
+debian@https:~$ sudo systemctl reload apache2
+```
+
+- Por último tenemos que realizar la resolución estática, pues la página web está en una instancia de OpenStack:
+
+```bash
+debian@https:~$ cat /etc/hosts
+127.0.0.1	localhost
+::1		localhost ip6-localhost ip6-loopback
+ff02::1		ip6-allnodes
+ff02::2		ip6-allrouters
+
+172.22.200.222	pablo.iesgn.org
+```
+
+```bash
+pavlo@debian:~()$ cat /etc/hosts
+127.0.0.1	localhost
+127.0.1.1	debian
+172.22.203.178  django-pablo.com
+#172.22.7.9	wordpress.pablo.beer
+#172.22.9.234	biblioteca.pablo.org
+172.22.123.1	proxmox.gonzalonazareno.org
+172.22.200.222	pablo.iesgn.org
+
+# The following lines are desirable for IPv6 capable hosts
+::1     localhost ip6-localhost ip6-loopback
+ff02::1 ip6-allnodes
+ff02::2 ip6-allrouters
+```
+
+Y como vemos la página ya se puede ver correctamente:
+
+![image](/assets/img/posts/certificado/paginaweb.png)
+
+## Tarea 1: Certificado autofirmado
+
+Esta práctica la vamos a realizar con un compañero. En un primer momento un alumno creará una Autoridad Certficadora y firmará un certificado para la página del otro alumno. Posteriormente se volverá a realizar la práctica con los roles cambiados.
+
+Para hacer esta práctica puedes buscar información en internet, algunos enlaces interesantes:
+
+[Phil’s X509/SSL Guide](https://www.phildev.net/ssl/)
+[How to setup your own CA with OpenSSL](https://gist.github.com/Soarez/9688998)
+
+En esta ocasión voy a ser yo el que haga de autoridad certificadora, de manera que podremos firmar el certificado para que nuestro compañero pueda implementar HTTPS en su servidor.
+
+### Crear su autoridad certificadora (generar el certificado digital de la CA). Mostrar el fichero de configuración de la AC.
+
+El primer paso consiste en establecer un directorio base para la Autoridad Certificadora (CA), con subdirectorios dedicados a diferentes funciones. Esto ayudará a mantener la organización durante todo el proceso. En este ejemplo, el directorio principal será CA/ y contendrá:
+
+- **certsdb**: Almacén de certificados firmados.
+
+- **certreqs**: Almacén de solicitudes de firma de certificados (CSR).
+
+- **crl**: Almacén de la lista de certificados revocados (CRL).
+
+- **private**: Almacén para la clave privada de la autoridad certificadora.
+
+Para crear esta estructura de directorios, ejecutaremos:
+
+```bash
+debian@https:~$ mkdir -p CA/{certsdb,certreqs,crl,private}
+```
+
+Una vez creados los directorios, accedemos al directorio principal y visualizamos la estructura:
+
+```bash
+debian@https:~/CA$ tree
+.
+├── certreqs
+├── certsdb
+├── crl
+└── private
+```
+
+Como el directorio `private` contendrá información sensible (la clave privada de la CA), es importante restringir su acceso únicamente al propietario. Cambiamos sus permisos a `700`:
+
+```bash
+debian@https:~/CA$ chmod 700 ./private
+```
+
+La CA necesitará un archivo que actúe como base de datos para registrar los certificados emitidos. Este archivo se creará con:
+
+```bash
+debian@https:~/CA$ touch index.txt
+```
+
+En este paso, copiaremos el archivo de configuración predeterminado de OpenSSL a nuestro directorio de trabajo y lo personalizaremos para adaptarlo a nuestra CA.
+
+1. Buscamos el archivo de configuración de OpenSSL en nuestro sistema. Las ubicaciones comunes son:
+
+- `/usr/lib/ssl/openssl.cnf`
+
+- `/etc/openssl.cnf`
+
+- `/usr/share/ssl/openssl.cnf`
+
+2. Copiamos el archivo al directorio CA:
+
+```bash
+debian@https:~/CA$ cp /usr/lib/ssl/openssl.cnf ./
+```
+
+3. Realizamos las siguientes modificaciones para que OpenSSL utilice los directorios creados anteriormente:
+
+```bash
+dir             = /home/debian/CA
+certs           = $dir/certsdb
+new_certs_dir   = $certs
+
+countryName_default             = ES
+stateOrProvinceName_default     = Sevilla
+localityName                    = Dos Hermanas
+0.organizationName              = PabloMartin SL
+organizationalUnitName          = Informatica
+
+#challengePassword              = A challenge password
+#challengePassword_min          = 4
+#challengePassword_max          = 20
+
+#unstructuredName               = An optional company name
+```
+
+Importante recalcar que estas solo son las modificaciones que yo he realizado, no es el fichero de configuración al completo.
+
+Tras ello, ya tendremos todo listo para generar nuestro par de claves y un fichero de solicitud de firma de certificado que posteriormente nos autofirmaremos, ejecutando para ello el comando:
+
+```bash
+debian@https:~/CA$ sudo openssl req -new -newkey rsa:2048 -keyout private/cakey.pem -out careq.pem -config ./openssl.cnf
+..+...+.+.....+.+.....+....+..+...+.......+.....+...+..........+.........+..+...+.+.................+...................+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++*.......+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++*...+...........................+.+...+.........+..+..........+...+......+..+...+.......+..+.+.....+.........+....................................+.........+.+......+.....+..........+...+..................+.........+.....+...+.+..+...+....+...+.........+.........+.........+.....+.......+...+..................+...+..+....+......+...+...........+...+.......+...+.....+...+....+......+............+.................+................+..............+....+...........+........................+.+.....+......+..........+.....+....+...............+......+...+..+....+...+...+.........+........+.+.........+..+.+.........+...+..+....+..+...+....+........+.......+..+....+.....+............+...+......+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+....+.+........+....+..+....+.........+...............+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++*...+............+..+.......+.....+....+..+...+....+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++*..+............+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+Enter PEM pass phrase:
+Verifying - Enter PEM pass phrase:
+-----
+You are about to be asked to enter information that will be incorporated
+into your certificate request.
+What you are about to enter is what is called a Distinguished Name or a DN.
+There are quite a few fields but you can leave some blank
+For some fields there will be a default value,
+If you enter '.', the field will be left blank.
+-----
+Country Name (2 letter code) [ES]:
+State or Province Name (full name) [Sevilla]:
+Dos Hermanas []:
+PabloMartin SL [Internet Widgits Pty Ltd]:
+Informatica []:
+Common Name (e.g. server FQDN or YOUR name) []:pablo.debian
+Email Address []:pmartinhidalgo19@gmail.com
+```
+
+El comando para crear un nuevo par de claves y una solicitud de firma de certificado (CSR) incluye estas opciones:
+
+- -new: Genera un par de claves nuevo.
+- -newkey: Define el tipo y tamaño del par de claves, en este caso RSA de 2048 bits.
+- -keyout: Especifica la ubicación donde se guardará la clave privada (por ejemplo, en private/cakey.pem).
+- -out: Define dónde guardar el CSR (por ejemplo, careq.pem).
+- -config: Indica a OpenSSL usar un archivo de configuración personalizado (openssl.cnf).
+
+Al ejecutar el comando, se solicita una frase de paso para proteger la clave privada. También se piden algunos datos básicos que deben coincidir con la información previamente configurada en el archivo `openssl.cnf`.
+
+Después de crear el CSR, se puede autofirmar el certificado para usarlo como Autoridad Certificadora (CA). Esto se realiza con el comando:
+
+```bash
+debian@https:~/CA$ sudo openssl ca -create_serial -out cacert.pem -days 365 -keyfile private/cakey.pem -selfsign -extensions v3_ca -config ./openssl.cnf -infiles careq.pem
+Using configuration from ./openssl.cnf
+Enter pass phrase for private/cakey.pem:
+Check that the request matches the signature
+Signature ok
+Certificate Details:
+        Serial Number:
+            36:15:6a:51:89:82:f6:66:e0:d2:4a:5d:43:61:6f:7b:3b:87:c3:5b
+        Validity
+            Not Before: Jan 11 11:56:18 2025 GMT
+            Not After : Jan 11 11:56:18 2026 GMT
+        Subject:
+            countryName               = ES
+            stateOrProvinceName       = Sevilla
+            organizationName          = Internet Widgits Pty Ltd
+            commonName                = pablo.debian
+            emailAddress              = pmartinhidalgo19@gmail.com
+        X509v3 extensions:
+            X509v3 Subject Key Identifier: 
+                70:63:CD:8F:AD:5E:82:EF:B8:DB:43:10:03:24:CA:AE:EB:6D:2F:5F
+            X509v3 Authority Key Identifier: 
+                70:63:CD:8F:AD:5E:82:EF:B8:DB:43:10:03:24:CA:AE:EB:6D:2F:5F
+            X509v3 Basic Constraints: critical
+                CA:TRUE
+Certificate is to be certified until Jan 11 11:56:18 2026 GMT (365 days)
+Sign the certificate? [y/n]:y
+
+
+1 out of 1 certificate requests certified, commit? [y/n]y
+Write out database with 1 new entries
+Database updated
+```
+
+Parámetros clave:
+
+- -create_serial: Genera un número de serie único de 128 bits para evitar conflictos si se reinicia el proceso.
+- -out: Especifica el archivo de salida del certificado firmado (por ejemplo, cacert.pem).
+- -days: Define la validez del certificado en días (en este caso, 365 días).
+- -keyfile: Utiliza la clave privada creada anteriormente (private/cakey.pem) para la firma.
+- -selfsign: Indica que el certificado será autofirmado.
+- -extensions: Selecciona las extensiones configuradas en el archivo openssl.cnf (por ejemplo, v3_ca).
+- -config: Indica el archivo de configuración de OpenSSL modificado.
+- -infiles: Especifica el CSR a firmar (en este caso, careq.pem).
+
+Durante la ejecución, OpenSSL solicita:
+
+1. La frase de paso configurada para la clave privada.
+2. Confirmación de la información del certificado antes de firmarlo.
+3. Aprobación final para guardar el certificado.
+
+Para verificar que el certificado de la autoridad certificadora se encuentra contenido en el directorio actual, listaremos el contenido del mismo haciendo uso del comando:
+
+```bash
+debian@https:~/CA$ ls -l
+total 52
+-rw-r--r-- 1 root root  4614 Jan 11 11:56 cacert.pem
+-rw-r--r-- 1 root root  1045 Jan 11 11:51 careq.pem
+drwxr-xr-x 2 root root  4096 Jan 11 11:30 certreqs
+drwxr-xr-x 2 root root  4096 Jan 11 11:56 certsdb
+drwxr-xr-x 2 root root  4096 Jan 11 11:30 crl
+-rw-r--r-- 1 root root   166 Jan 11 11:56 index.txt
+-rw-r--r-- 1 root root    21 Jan 11 11:56 index.txt.attr
+-rw-r--r-- 1 root root     0 Jan 11 11:37 index.txt.old
+-rw-r--r-- 1 root root 12279 Jan 11 11:46 openssl.cnf
+drwx------ 2 root root  4096 Jan 11 11:50 private
+-rw-r--r-- 1 root root    41 Jan 11 11:56 serial
+```
+
+Como vemos existe un fichero **cacert.pem** que es resultado de firmar el fichero de solicitud de firma de certificado **careq.pem**.
+
+Todo está preparado para firmar el certificado del servidor de mi compañero. Por ello, he colocado su archivo de solicitud de firma dentro del directorio `certreqs/`, que es la ubicación designada para estos casos.
+
+```bash
+debian@https:~/CA$ ls -l certreqs/
+total 4
+-rw-r--r-- 1 root root 1074 Jan 11 12:10 joseantoniocgonzalez.csr
+```
+
+Ya podemos proceder a firmar usando el siguiente comando:
+
+```bash
+debian@https:~/CA$ sudo openssl ca -config openssl.cnf -out certsdb/joseantoniocgonzalez.crt -infiles certreqs/joseantoniocgonzalez.csr
+Using configuration from openssl.cnf
+Enter pass phrase for /home/debian/CA/private/cakey.pem:
+Check that the request matches the signature
+Signature ok
+Certificate Details:
+        Serial Number:
+            36:15:6a:51:89:82:f6:66:e0:d2:4a:5d:43:61:6f:7b:3b:87:c3:5d
+        Validity
+            Not Before: Jan 11 12:37:59 2025 GMT
+            Not After : Jan 11 12:37:59 2026 GMT
+        Subject:
+            countryName               = ES
+            stateOrProvinceName       = SEVILLA
+            localityName              = SEVILLA
+            organizationName          = ASIR
+            commonName                = joseantoniocgonzalez.iesgn.org
+            emailAddress              = joseantoniocgonzalez83@gmail.com
+        X509v3 extensions:
+            X509v3 Basic Constraints: 
+                CA:FALSE
+            X509v3 Subject Key Identifier: 
+                0C:95:B9:A0:01:E3:46:16:7D:FE:4D:E1:6B:54:A4:E0:AA:DC:05:80
+            X509v3 Authority Key Identifier: 
+                70:63:CD:8F:AD:5E:82:EF:B8:DB:43:10:03:24:CA:AE:EB:6D:2F:5F
+Certificate is to be certified until Jan 11 12:37:59 2026 GMT (365 days)
+Sign the certificate? [y/n]:y
+
+
+1 out of 1 certificate requests certified, commit? [y/n]y
+Write out database with 1 new entries
+Database updated
+```
+
+Donde:
+
+- -config: Indica a OpenSSL que utilice un archivo de configuración personalizado, en este caso llamado openssl.cnf, en lugar del predeterminado.
+- -out: Especifica dónde se guardará el certificado firmado. Aquí, se almacenará en el directorio certsdb/ con el nombre joseantoniocgonzalez.crt.
+- -infiles: Señala el archivo CSR que se desea firmar. En este caso, es el archivo joseantoniocgonzalez.csr, ubicado en el directorio certreqs/.
+
+Al ejecutar el comando, OpenSSL solicita la frase de paso configurada previamente para proteger la clave privada de la autoridad certificadora. Esto garantiza que, incluso si la clave privada cae en manos equivocadas, no puedan realizar firmas indebidas. Antes de proceder, OpenSSL también muestra la información contenida en el certificado para confirmar que es correcta.
+
+Una vez firmado, el certificado se almacena en el directorio certsdb/. Para confirmar su creación, listamos el contenido de dicho directorio con el comando:
+
+```bash
+debian@https:~/CA$ ls -l certsdb/
+total 24
+-rw-r--r-- 1 root root 4614 Jan 11 11:56 36156A518982F666E0D24A5D43616F7B3B87C35B.pem
+-rw-r--r-- 1 root root 4643 Jan 11 12:38 36156A518982F666E0D24A5D43616F7B3B87C35D.pem
+-rw-r--r-- 1 root root 4643 Jan 11 12:38 joseantoniocgonzalez.crt
+```
+
+El resultado muestra tres archivos:
+
+1. El certificado de la autoridad certificadora.
+2. Dos archivos relacionados con el certificado del compañero: uno identificado con un número de serie y otro con un nombre descriptivo, facilitando su identificación.
+
+El archivo que debe entregarse al compañero es certsdb/joseantoniocgonzalez.crt, que contiene su certificado firmado. Además, debe recibir el archivo cacert.pem, que es el certificado de la autoridad certificadora, necesario para verificar la validez del certificado.
+
+El archivo index.txt funciona como una base de datos en texto plano que registra información sobre los certificados emitidos por la CA. Se puede visualizar con:
+
+```bash
+debian@https:~/CA$ cat index.txt
+V	260111115618Z		36156A518982F666E0D24A5D43616F7B3B87C35B	unknown	/C=ES/ST=Sevilla/O=Internet Widgits Pty Ltd/CN=pablo.debian/emailAddress=pmartinhidalgo19@gmail.com
+V	260111123759Z		36156A518982F666E0D24A5D43616F7B3B87C35D	unknown	/C=ES/ST=SEVILLA/L=SEVILLA/O=ASIR/CN=joseantoniocgonzalez.iesgn.org/emailAddress=joseantoniocgonzalez83@gmail.com
+```
+
+En el contenido se puede observar:
+
+- Estado de los certificados: En este caso, ambos están marcados como válidos (V).
+- Fecha de expiración: Indica hasta cuándo es válido cada certificado.
+- Número de serie: Identificador único de cada certificado.
+- Información del sujeto: Detalla los campos incluidos en el CSR, como el país, la organización y el correo electrónico.
+
