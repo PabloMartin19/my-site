@@ -283,7 +283,7 @@ Para hacer esta práctica puedes buscar información en internet, algunos enlace
 
 En esta ocasión voy a ser yo el que haga de autoridad certificadora, de manera que podremos firmar el certificado para que nuestro compañero pueda implementar HTTPS en su servidor.
 
-### Crear su autoridad certificadora (generar el certificado digital de la CA). Mostrar el fichero de configuración de la AC.
+### Crear una autoridad certificadora
 
 El primer paso consiste en establecer un directorio base para la Autoridad Certificadora (CA), con subdirectorios dedicados a diferentes funciones. Esto ayudará a mantener la organización durante todo el proceso. En este ejemplo, el directorio principal será CA/ y contendrá:
 
@@ -517,9 +517,9 @@ Database updated
 
 Donde:
 
-- -config: Indica a OpenSSL que utilice un archivo de configuración personalizado, en este caso llamado openssl.cnf, en lugar del predeterminado.
-- -out: Especifica dónde se guardará el certificado firmado. Aquí, se almacenará en el directorio certsdb/ con el nombre joseantoniocgonzalez.crt.
-- -infiles: Señala el archivo CSR que se desea firmar. En este caso, es el archivo joseantoniocgonzalez.csr, ubicado en el directorio certreqs/.
+- `-config`: Indica a OpenSSL que utilice un archivo de configuración personalizado, en este caso llamado openssl.cnf, en lugar del predeterminado.
+- `-out`: Especifica dónde se guardará el certificado firmado. Aquí, se almacenará en el directorio certsdb/ con el nombre joseantoniocgonzalez.crt.
+- `-infiles`: Señala el archivo CSR que se desea firmar. En este caso, es el archivo joseantoniocgonzalez.csr, ubicado en el directorio certreqs/.
 
 Al ejecutar el comando, OpenSSL solicita la frase de paso configurada previamente para proteger la clave privada de la autoridad certificadora. Esto garantiza que, incluso si la clave privada cae en manos equivocadas, no puedan realizar firmas indebidas. Antes de proceder, OpenSSL también muestra la información contenida en el certificado para confirmar que es correcta.
 
@@ -554,4 +554,84 @@ En el contenido se puede observar:
 - Fecha de expiración: Indica hasta cuándo es válido cada certificado.
 - Número de serie: Identificador único de cada certificado.
 - Información del sujeto: Detalla los campos incluidos en el CSR, como el país, la organización y el correo electrónico.
+
+### Configurar HTTPS
+
+Ahora me toca hacerlo al revés, lo primero será generar una solicitud de firma de certificado (CSR, por sus siglas en inglés). En este caso utilizaremos OpenSSL, aunque también se podrían emplear otras herramientas de software para lograrlo.
+
+Para crear la solicitud, primero necesitamos contar con una clave privada que estará vinculada al certificado. Por lo tanto, procederemos a generar una clave privada RSA de 4096 bits, la cual será almacenada en el directorio `/etc/ssl/private/`. Esto se realiza mediante el siguiente comando:
+
+```bash
+debian@https:~$ sudo openssl genrsa 4096 > pablomh.key
+debian@https:~$ sudo mv pablomh.key /etc/ssl/private/
+```
+
+Después de generar la clave privada, ajustaremos sus permisos a 400, lo que restringirá el acceso para que únicamente el propietario pueda leer su contenido. Dado que se trata de información sensible, este paso, aunque no obligatorio, es altamente recomendable por razones de seguridad.
+
+```bash
+debian@https:~$ sudo chmod 400 /etc/ssl/private/pablomh.key
+```
+
+A continuación, procederemos a generar un archivo `.csr`, que será la solicitud de firma de certificado destinada a ser validada por la autoridad certificadora (CA) configurada por nuestro compañero. Este archivo no incluye información sensible, por lo que su ubicación y los permisos asignados no son críticos. Por lo tanto:
+
+```bash
+debian@https:~$ sudo openssl req -new -key /etc/ssl/private/pablomh.key -out pablomh.csr
+You are about to be asked to enter information that will be incorporated
+into your certificate request.
+What you are about to enter is what is called a Distinguished Name or a DN.
+There are quite a few fields but you can leave some blank
+For some fields there will be a default value,
+If you enter '.', the field will be left blank.
+-----
+Country Name (2 letter code) [AU]:ES
+State or Province Name (full name) [Some-State]:Sevilla
+Locality Name (eg, city) []:Dos Hermanas
+Organization Name (eg, company) [Internet Widgits Pty Ltd]:ASIR
+Organizational Unit Name (eg, section) []:Informatica
+Common Name (e.g. server FQDN or YOUR name) []:pablo.debian   
+Email Address []:pmartinhidalgo19@gmail.com
+
+Please enter the following 'extra' attributes
+to be sent with your certificate request
+A challenge password []:
+An optional company name []:
+```
+
+Durante la ejecución, nos pedirá una serie de valores para identificar al certificado, que tendremos que rellenar en base a la información que nos proporcionará la autoridad certificadora; excepto los dos últimos valores, los cuales pedirán una serie de valores cuya introducción es opcional.
+
+Para verificar que el fichero de solicitud de firma ha sido correctamente generado listaremos el contenido del directorio actual:
+
+```bash
+debian@https:~$ ls -l
+total 16
+drwxr-xr-x 6 root   root   4096 Jan 11 12:38 CA
+-rw-r--r-- 1 root   root   1773 Jan 14 17:00 pablomh.csr
+```
+
+Como vemos existe un fichero de nombre `pablomh.csr` que debemos enviar a nuestro compañero, para que así sea firmado por la correspondiente autoridad certificadora que ha creado. Además de dicho certificado firmado, nos debe enviar la clave pública de la entidad certificadora, es decir, el certificado de la misma, para así poder verificar su firma sobre nuestro certificado.
+
+Bien, pues Jose ya me ha enviado ambos ficheros, los cuales voy a almacenar en `/etc/ssl/certs/`.
+
+![image](/assets/img/posts/certificado/discordjose.png)
+
+```bash
+debian@https:~$ ls -l /etc/ssl/certs/ | grep 'pablomh'
+-rw-r--r-- 1 root root   2090 Jan 14 17:31 pablomh.crt
+debian@https:~$ ls -l /etc/ssl/certs/ | grep 'cacert'
+-rw-r--r-- 1 root root   2244 Jan 14 17:31 cacert.pem
+```
+
+Debe existir un fichero de nombre tunombre.crt que es el resultado de la firma de la solicitud de firma de certificado que previamente le hemos enviado, y otro de nombre cacert.pem, que es el certificado de la entidad certificadora, con el que posteriormente se comprobará la firma de la autoridad certificadora sobre dicho certificado del servidor.
+
+Al igual que apache2 incluía un VirtualHost por defecto para las peticiones entrantes por el puerto 80 (HTTP), contiene otro por defecto para las peticiones entrantes por el puerto 443 (HTTPS), de nombre default-ssl, que por defecto viene deshabilitado, así que procederemos a modificarlo teniendo en cuenta las siguientes directivas:
+
+- ServerName: Al igual que en el VirtualHost anterior, tendremos que indicar el nombre de dominio a través del cuál accederemos al servidor.
+
+- SSLEngine: Activa el motor SSL, necesario para hacer uso de HTTPS, por lo que su valor debe ser on.
+
+- SSLCertificateFile: Indicamos la ruta del certificado del servidor firmado por la CA. En este caso, /etc/ssl/certs/pablomh.crt.
+
+- SSLCertificateKeyFile: Indicamos la ruta de la clave privada asociada al certificado del servidor. En este caso, /etc/ssl/private/pablomh.key.
+
+- SSLCACertificateFile: Indicamos la ruta del certificado de la CA con el que comprobaremos la firma de nuestro certificado. En este caso, /etc/ssl/certs/cacert.pem.
 
