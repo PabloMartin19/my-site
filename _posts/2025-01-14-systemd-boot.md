@@ -238,3 +238,202 @@ Y como vemos nos sale la versión correcta:
 
 - **Tiempo de Arranque Más Lento:**  
   Comparado con gestores de arranque más livianos como `systemd-boot`, GRUB puede tardar más en cargar el sistema operativo, lo que podría ser un inconveniente para quienes buscan un arranque rápido.  
+
+### 2. Versiones de GNU/Linux que están usando systemd boot como gestor de arranque por defecto
+
+En mayo de 2011, Fedora se convirtió en la primera distribución principal de Linux en habilitar systemd por defecto.
+
+Distribuciones en las que systemd está habilitado de forma predeterminada:
+
+- Arch Linux, Clear Linux, Pop!_Os, Fedora y Antergos.
+
+### 3. Migración de Grub a SystemdBoot
+
+Para hacer la migración del gestor de arranque grub a systemd-boot usaré una máquina virtual con Debian 12.
+
+Tenemos el siguiente esquema de particiones:
+
+![image](/assets/img/posts/systemd-boot/lsblk.png)
+
+Como podemos comprobar,el sistema ha arrancado mediante grub, ya que tiene su partición correspondiente `/boot/efi`. Para hacer la instalación de SystemdBoot es importante que la partición de arranque se encuentre en formato vfat, ya que SystemdBoot no reconoce otro sistema de de ficheros.
+
+Empezaremos instalando el paquete que contiene todos los binarios que usaremos para el cambio:
+
+```bash
+sudo apt install systemd-boot
+```
+
+Por defecto, en un sistema con UEFI (Unified Extensible Firmware Interface), la partición de arranque EFI (/boot/efi) ya debería estar formateada en FAT32. Esto se debe a que el sistema UEFI utiliza este formato para almacenar los cargadores de arranque (como systemd-boot o GRUB) y otros archivos necesarios para el arranque del sistema.
+
+Pero por error durante la instalación, he tenido que modificar el formato de la partición de la siguiente forma:
+
+```bash
+pablo@debian:~$ sudo gdisk /dev/vda
+Command (? for help): t 
+Partition number (1-3): 1
+Current type is 700 (Microsoft basic data)
+Hex code or GUID (L to show codes, Enter = 700): EF00
+Changed type of partition to 'EFI system partition'
+
+Command (? for help): w
+
+Final checks complete. About to write GPT data. THIS WILL OVERWRITE EXISTING
+PARTITIONS!!
+
+Do you want to proceed? (Y/N): Y
+OK; writing new GUID partition table (GPT) to /dev/vda.
+Warning: The kernel is still using the old partition table.
+The new table will be used at the next reboot or after you
+run partprobe(8) or kpartx(8)
+The operation has completed successfully.
+```
+
+Esto formateó la partición correctamente en FAT32. Después de formatear la partición, he ejecutado el comando `bootctl` para instalar el cargador de arranque, y esta vez se completó correctamente sin errores:
+
+```bash
+pablo@debian:~$ sudo bootctl --path=/boot/efi install
+Created "/boot/efi/EFI/systemd".
+Created "/boot/efi/EFI/BOOT".
+Created "/boot/efi/loader".
+Created "/boot/efi/loader/entries".
+Created "/boot/efi/EFI/Linux".
+Copied "/usr/lib/systemd/boot/efi/systemd-bootx64.efi" to "/boot/efi/EFI/systemd/systemd-bootx64.efi".
+Copied "/usr/lib/systemd/boot/efi/systemd-bootx64.efi" to "/boot/efi/EFI/BOOT/BOOTX64.EFI".
+Random seed file /boot/efi/loader/random-seed successfully written (32 bytes).
+Not installing system token, since we are running in a virtualized environment.
+Created EFI boot entry "Linux Boot Manager".
+```
+
+Ahora, la instalación se completó con éxito, creando los archivos y directorios esperados en `/boot/efi`:
+
+![image](/assets/img/posts/systemd-boot/loader.png)
+
+A continuación ejecutaremos el siguiente comando:
+
+```bash
+pablo@debian:~$ sudo bootctl install 
+Copied "/usr/lib/systemd/boot/efi/systemd-bootx64.efi" to "/boot/efi/EFI/systemd/systemd-bootx64.efi".
+Copied "/usr/lib/systemd/boot/efi/systemd-bootx64.efi" to "/boot/efi/EFI/BOOT/BOOTX64.EFI".
+Random seed file /boot/efi/loader/random-seed successfully written (32 bytes).
+Not installing system token, since we are running in a virtualized environment.
+Created EFI boot entry "Linux Boot Manager".
+```
+
+Este comando instalará el cargador de inicialización de SystemdBoot.
+
+Vamos a editar el fichero **loader.conf** el cual se encuentra en el directorio que hemos comentado antes. En este fichero definimos las opciones de arranque del cargador. Habrá que insertar el siguiente contenido:
+
+```bash
+pablo@debian:~$ sudo cat /boot/efi/loader/loader.conf 
+timeout 3
+console-mode keep
+editor yes
+default debian.conf
+```
+
+Podemos comprobar que hemos especificado el fichero debian.conf, este fichero habrá que crearlo manualmente a continuación y será nuestra entrada por defecto. Todas las entradas del cargador de arranque serán definidas en el directorio `/boot/efi/loader/entries` como ficheros `.conf`.
+
+El fichero `debian.conf` que crearé contiene lo siguiente:
+
+```bash
+pablo@debian:/boot/efi/loader/entries$ cat debian.conf 
+title Debian pavlo
+linux /boot/vmlinuz-6.1.0-30-amd64
+initrd /boot/initrd.img-6.1.0-30-amd64
+options root=UUID=bb1ecc0e-1c27-4914-bc85-65c16534b488 rw
+```
+
+- **Title**: Título de la entrada que veremos en el arranque.
+- **Linux**: Ruta de la imagen del kernel que vamos a iniciar, partiendo del directorio /boot/efi.
+- **Initrd**: Ruta de la imagen initrd que vamos a iniciar, partiendo del directorio /boot/efi.
+- **Options**: Partición raíz que se montará. En esta debemos especificar el UUID de la partición (Podemos obtenerlo con el comando blkid). Aquí también podemos definir las opciones de montaje, en mi caso rw, para lectura y escritura.
+
+También crearé otra entrada para la Shell EFI:
+
+```bash
+pablo@debian:/boot/efi/loader/entries$ cat shellefi.conf
+title EFI Shell
+efi /EFI/shellx64.efi
+```
+
+El firmware shellx64.efi podemos descargarlo desde el siguiente enlace:
+
+```
+https://github.com/holoto/efi_shell_flash_bios/blob/master/Shellx64.efi
+```
+
+El cual moveremos a la ruta que hemos especificado:
+
+```bash
+pablo@debian:~$ sudo mv Shellx64.efi /boot/efi/EFI/
+pablo@debian:~$ ls -l /boot/efi/EFI/
+total 948
+drwxr-xr-x 2 root root   4096 ene 16 14:20 BOOT
+drwxr-xr-x 2 root root   4096 ene 16 13:46 debian
+drwxr-xr-x 2 root root   4096 ene 16 14:11 Linux
+-rwxr-xr-x 1 root root 951744 ene 16 14:28 Shellx64.efi
+drwxr-xr-x 2 root root   4096 ene 16 14:20 systemd
+```
+
+Una vez hecho eso debemos desactivar el Secure Boot, podemos hacerlo desde la BIOS o bien ejecutando el comando:
+
+```bash
+pablo@debian:~$ sudo mokutil --disable-validation
+password length: 8~16
+input password: 
+input password again: 
+```
+
+Una vez hecho esto, actualizaremos el gestor de arranque SystemdBoot:
+
+```bash
+pablo@debian:~$ sudo bootctl update
+Skipping "/boot/efi/EFI/systemd/systemd-bootx64.efi", since same boot loader version in place already.
+Skipping "/boot/efi/EFI/BOOT/BOOTX64.EFI", since same boot loader version in place already.
+```
+
+Como último paso, podemos comprobar el orden de arranque con `efibootmgr`:
+
+```bash
+pablo@debian:~$ efibootmgr
+BootCurrent: 0004
+Timeout: 0 seconds
+BootOrder: 0001,0004,0002,0000,0003
+Boot0000* UiApp
+Boot0001* Linux Boot Manager
+Boot0002* UEFI Misc Device
+Boot0003* EFI Internal Shell
+Boot0004* debian
+```
+
+El primero debe ser Linux Boot Manager, podemos cambiar el orden con efibootmgr -o XXXX
+
+Podemos opcionalmente desintalar grub, aunque yo no lo haré en esta ocasión. Finalmente reiniciamos el equipo y comprobamos si arranca con SystemdBoot.
+
+A mi me dió fallo, y tras varias pruebas e investigando conseguí solucionarlo de la siguiente forma:
+
+Eliminé la entrada de debian.conf, la cual estaba rota ya que no reconocía bien los archivos:
+
+```bash
+pablo@debian:~$ sudo rm /boot/efi/loader/entries/debian.conf
+```
+
+Luego, regeneré las entradas de `systemd-boot` para que apunten a los archivos correctos:
+
+```bash
+pablo@debian:~$ sudo bootctl update
+Skipping "/boot/efi/EFI/systemd/systemd-bootx64.efi", since same boot loader version in place already.
+Skipping "/boot/efi/EFI/BOOT/BOOTX64.EFI", since same boot loader version in place already.
+```
+
+Y finalmente reinicié el sistema y me apareció correctamente:
+
+![image](/assets/img/posts/systemd-boot/porfin.png)
+
+Pudiendo acceder sin problemas tanto al sistema:
+
+![image](/assets/img/posts/systemd-boot/prueba.png)
+
+Como a la shell EFI:
+
+![image](/assets/img/posts/systemd-boot/shellefi.png)
