@@ -186,3 +186,14 @@ root@debian:~# bootctl status
 `bootctl` es una herramienta integrada en `systemd` que permite gestionar `systemd-boot`. El subcomando status muestra información sobre el estado actual del gestor de arranque.
 
 Como podemos observar en la imagen, systemd-boot está instalado y configurado correctamente. 
+
+Por último, podemos ver la versión de Debian instalando Neofetch:
+
+![image](/assets/img/posts/systemd-boot/neofetch.png)
+
+Y como vemos nos sale la versión correcta:
+
+![image](/assets/img/posts/systemd-boot/neo.png)
+
+## 2. Cambiar el tradicional gestor de arranque grub por systemd boot en una máquina virtual con debian 12.
+
