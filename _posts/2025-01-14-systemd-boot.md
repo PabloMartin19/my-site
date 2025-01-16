@@ -4,7 +4,7 @@ date: 2025-01-14 13:30:00 +0000
 categories: [Sistemas, Systemd]
 tags: [Systemd]
 author: pablo
-description: "...."
+description: "En este post aprenderemos a instalar Debian 13 Trixie con systemd-boot en donde nos familiarizaremos con el sistema. Además, haremos un cambio de gestor de arranque iniciando por grub y finalmente acabando con systemd-boot."
 toc: true
 comments: true
 image:
