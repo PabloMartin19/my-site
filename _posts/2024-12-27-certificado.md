@@ -4,7 +4,7 @@ date: 2024-12-19 17:30:00 +0000
 categories: [Seguridad, Criptografía]
 tags: [Criptografía]
 author: pablo
-description: "...."
+description: "En esta práctica vamos a trabajar con certificados digitales para autenticarnos, firmar documentos y securizar una página web con HTTPS. Primero, instalaremos un certificado digital de persona física en nuestro navegador y aprenderemos a hacer copias de seguridad. Luego, validaremos el certificado con Autofirma y la plataforma VALIDe. También utilizaremos nuestra firma digital para firmar y verificar documentos. Finalmente, configuraremos un servidor web con Apache y Nginx usando certificados autofirmados, aprendiendo a generar claves privadas, CSR y certificados X.509 con nuestra propia Autoridad Certificadora. 🔒✅"
 toc: true
 comments: true
 image:
@@ -635,3 +635,139 @@ Al igual que apache2 incluía un VirtualHost por defecto para las peticiones ent
 
 - SSLCACertificateFile: Indicamos la ruta del certificado de la CA con el que comprobaremos la firma de nuestro certificado. En este caso, /etc/ssl/certs/cacert.pem.
 
+Quedando el archivo final de la siguiente forma:
+
+```bash
+debian@https:~$ cat /etc/apache2/sites-available/default-ssl.conf
+<VirtualHost *:80> 
+  ServerName pablo.iesgn.org
+
+  Redirect permanent / https://pablo.iesgn.org/
+</VirtualHost>
+<VirtualHost *:443>
+	ServerAdmin webmaster@localhost
+	ServerName pablo.iesgn.org
+	DocumentRoot /var/www/html
+
+	ErrorLog ${APACHE_LOG_DIR}/error.log
+	CustomLog ${APACHE_LOG_DIR}/access.log combined
+
+	SSLEngine on
+	
+	SSLCertificateFile      /etc/ssl/certs/pablomh.crt
+	SSLCertificateKeyFile /etc/ssl/private/pablomh.key
+	SSLCACertificateFile /etc/ssl/certs/cacert.pem
+</VirtualHost>
+```
+
+Dado que éste VirtualHost no viene habilitado por defecto, tendremos que hacerlo manualmente:
+
+```bash
+debian@https:~# sudo a2ensite default-ssl
+Enabling site default-ssl.
+To activate the new configuration, you need to run:
+  systemctl reload apache2
+```
+
+Además, lo que queremos hacer es forzar el uso de HTTPS (https://), de manera que estableceremos una redirección permanente en el VirtualHost accesible en el puerto 80 para que se así no se permita servir la página por HTTP (http://). De forma que tendremos que hacer lo siguiente en el fichero:
+
+```bash
+debian@https:~$ cat /etc/apache2/sites-available/000-default.conf
+<VirtualHost *:80>
+        ServerName pablo.iesgn.org
+
+        ServerAdmin webmaster@localhost
+        DocumentRoot /var/www/html
+
+        ErrorLog ${APACHE_LOG_DIR}/error.log
+        CustomLog ${APACHE_LOG_DIR}/access.log combined
+
+        Redirect 301 / https://pablo.iesgn.com/
+</VirtualHost>
+```
+
+Reiniciamos:
+
+```bash
+debian@https:~$ sudo systemctl restart apache2
+```
+
+![image](/assets/img/posts/certificado/redirect.png)
+
+Podemos observar que se ha generado una advertencia de seguridad, lo que confirma que la redirección de `http://` a `https://` se ha realizado con éxito.  
+
+Esta advertencia se debe a que el navegador no ha podido verificar la firma del certificado recibido desde el servidor, ya que no dispone de la clave pública o del certificado de la Autoridad Certificadora (CA). Para solucionar esto, es necesario importar manualmente dicho certificado en el navegador.  
+
+En el caso de Firefox, para llevar a cabo esta importación, primero debemos hacer clic en el icono de las tres barras ubicado en la parte superior del navegador. Luego, accedemos a **Preferencias** (o **Ajustes**) y buscamos la sección **Privacidad & Seguridad**. Desplazándonos hasta la parte inferior, encontraremos el apartado **Certificados**, donde haremos clic en **Ver certificados**. A continuación, en la pestaña **Autoridades**, seleccionamos la opción **Importar**, lo que nos permitirá añadir el certificado de la CA.  
+
+Una vez elegido el certificado a importar, aparecerá un mensaje informándonos de que se nos solicita confiar en una nueva Autoridad Certificadora (CA). En este punto, simplemente confirmamos la acción haciendo clic en **Aceptar**.  
+
+Después de completar estos pasos, podremos comprobar que el certificado ha sido importado correctamente.
+
+![image](/assets/img/posts/certificado/autoridadjose.png)
+
+Una vez importado el certificado recargamos la página para mostrar el contenido:
+
+![image](/assets/img/posts/certificado/infoapache.png)
+
+Como podemos notar, la advertencia de seguridad ha vuelto a aparecer. Si observamos junto a la barra de direcciones, veremos un icono de candado. Al hacer clic en él, se desplegará la información correspondiente.
+
+Además, si le damos a **Ver Certificado** nos mostrará información del mismo:
+
+![image](/assets/img/posts/certificado/infocertificado.png)
+
+**¿Por qué el sitio no es seguro a pesar de usar HTTPS?**  
+
+El navegador sigue indicando que el sitio no es seguro porque el certificado utilizado ha sido emitido por una Autoridad Certificadora (CA) que no es reconocida como confiable por los navegadores. Esto ocurre porque el certificado ha sido generado por la CA de mi compañero, y aunque la conexión esté cifrada mediante HTTPS, navegadores como Chrome o Firefox no confiarán en una entidad que no esté validada a nivel internacional.  
+
+Hemos verificado que con Apache2 hemos logrado que HTTPS funcione, aunque sin una certificación oficial no será reconocido como seguro. Ahora realizaremos la misma prueba con la otra alternativa: Nginx.
+
+El primer paso será desinstalar apache2 para evitar posibles conflictos, y tras ello, instalar nginx.
+
+Después de esto, podemos proceder con la configuración del nuevo servidor web. Este servicio también incluye un VirtualHost por defecto, pero a diferencia de Apache2, permite unificar en un solo archivo la configuración tanto del VirtualHost que opera en el puerto 80 como el del puerto 443. Este archivo se encuentra en la ruta `/etc/nginx/sites-available/default`.
+
+De forma que el fichero quedaría de la siguiente forma:
+
+```bash
+debian@https:~$ sudo cat /etc/nginx/sites-enabled/default 
+server {
+        listen 80 default_server;
+        listen [::]:80 default_server;
+
+        server_name pablo.iesgn.org;
+
+        return 301 https://$host$request_uri;
+}
+
+server {
+        listen 443 ssl default_server;
+        listen [::]:443 ssl default_server;
+
+        ssl    on;
+        ssl_certificate    /etc/ssl/certs/pablomh.crt;
+        ssl_certificate_key    /etc/ssl/private/pablomh.key;
+
+        root /var/www/html/pablo.iesgn.org;
+
+        index index.html index.htm index.nginx-debian.html;
+
+        server_name pablo.iesgn.org;
+
+        location / {
+                try_files $uri $uri/ =404;
+        }
+}
+```
+
+Reiniciamos para que se efectúen los cambios:
+
+```bash
+debian@https:~$ sudo systemctl reload nginx
+```
+
+Tras ello, ya estará todo listo para acceder a `pablo.iesgn.org` desde el navegador.
+
+![image](/assets/img/posts/certificado/nginx.png)
+
+
+Y como podemos observar, el certificado de mi compañero está funcionando correctamente.
