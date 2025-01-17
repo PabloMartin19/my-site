@@ -375,7 +375,7 @@ drwxr-xr-x 2 root root   4096 ene 16 14:11 Linux
 drwxr-xr-x 2 root root   4096 ene 16 14:20 systemd
 ```
 
-Una vez hecho eso debemos desactivar el Secure Boot, podemos hacerlo desde la BIOS o bien ejecutando el comando:
+Una vez hecho esTo debemos desactivar el Secure Boot, podemos hacerlo desde la BIOS o bien ejecutando el comando:
 
 ```bash
 pablo@debian:~$ sudo mokutil --disable-validation
@@ -384,7 +384,7 @@ input password:
 input password again: 
 ```
 
-Una vez hecho esto, actualizaremos el gestor de arranque SystemdBoot:
+Después, actualizaremos el gestor de arranque SystemdBoot:
 
 ```bash
 pablo@debian:~$ sudo bootctl update
