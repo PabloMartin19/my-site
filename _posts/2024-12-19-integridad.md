@@ -127,11 +127,13 @@ Ya he eliminado la clave pública de Jose de mi keyring.
 
 ### Crea un anillo de confianza entre los miembros de la clase
 
-En el uso cotidiano de los pares de claves GPG, surge un desafío esencial: garantizar la confianza. Es fundamental disponer de un mecanismo que permita verificar que las claves públicas que empleamos realmente pertenecen a las personas que afirman ser sus propietarias. Esto asegura que, al cifrar un archivo con una clave pública, el destinatario legítimo sea quien lo reciba y no un tercero malintencionado. Del mismo modo, al verificar la firma de un archivo, necesitamos confirmar que la persona que lo firmó es quien dice ser.
+Para garantizar la seguridad en el uso de claves GPG, es fundamental asegurarnos de que las claves públicas con las que interactuamos realmente pertenecen a sus supuestos dueños. Sin esta verificación, podríamos estar cifrando información para un atacante en lugar del destinatario legítimo o aceptando firmas falsas sin darnos cuenta. La confianza en las claves es, por tanto, un aspecto esencial en la criptografía.  
 
-Una de las soluciones más comunes es la creación de un anillo de confianza. Este consiste en un grupo limitado de personas que tienen relaciones de confianza entre sí. Para demostrar esta confianza, firmamos la huella digital (o *fingerprint*) de una clave pública con nuestra propia clave privada. Posteriormente, enviamos esta clave firmada a su propietario, quien puede importarla y compartirla con otros, añadiendo así nuestra firma como respaldo. Esto refuerza la credibilidad y confianza en dicha clave.
+Una forma de establecer esta confianza es a través del **anillo de confianza**, un sistema basado en la validación mutua entre personas que confían entre sí. Este mecanismo permite que los usuarios firmen la huella digital (*fingerprint*) de una clave pública utilizando su propia clave privada. Una vez firmada, la clave se devuelve a su propietario, quien puede compartirla con otros, demostrando así que ha sido validada por alguien de confianza.  
 
-Este enfoque también permite una validación indirecta. Si confiamos en alguien que nos proporciona su clave pública y esa persona valida, mediante una firma, la clave de una tercera persona, podríamos considerar válida esta tercera clave. Esto depende de cómo configuremos nuestro sistema de confianza y de las relaciones existentes entre las personas implicadas. De esta forma, el proceso de validación de claves públicas recae en aquellas personas en las que hemos depositado nuestra confianza. Aunque puede parecer un poco complejo al principio, un ejemplo práctico ayudará a aclarar cómo funciona este sistema.
+Este proceso no solo fortalece la credibilidad de una clave, sino que también facilita la verificación indirecta. Si confiamos en una persona y esta, a su vez, ha certificado la clave de otra, podemos asumir que dicha clave es confiable sin necesidad de validarla directamente. La efectividad de este modelo depende de cómo se configuren las relaciones de confianza y de la fiabilidad de quienes participan en la red.  
+
+Aunque puede parecer complicado al principio, este sistema es muy útil para garantizar la autenticidad de las claves en un entorno seguro. Un ejemplo práctico ayudará a comprender mejor su funcionamiento.
 
 **Pasos para crear un anillo de confianza**
 
