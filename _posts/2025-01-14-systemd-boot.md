@@ -340,7 +340,7 @@ pablo@debian:/boot/efi/loader/entries$ cat debian.conf
 title Debian pavlo
 linux /boot/vmlinuz-6.1.0-30-amd64
 initrd /boot/initrd.img-6.1.0-30-amd64
-options root=UUID=bb1ecc0e-1c27-4914-bc85-65c16534b488 rw
+options root=UUID=1b5bfe97-7afe-4adb-8230-a03707f63e2d rw
 ```
 
 - **Title**: Título de la entrada que veremos en el arranque.
