@@ -123,15 +123,15 @@ pavlo@debian:~/certificado()$ echo 'Este fichero está firmado por AutoFirma' > 
 
 Una vez generados los ficheros vamos a proceder a firmar el primero de ellos a través de la página [VALIDe](https://valide.redsara.es/valide/). En este caso, pulsaremos en el apartado **Realizar Firma**.
 
-Dentro del mismo, pulsaremos en **Firmar** y acto seguido nos pedirá el fichero que deseamos firmar. En este caso, tendremos que elegir el fichero `ficherovalide.txt`, indicando además el certificado que queremos utilizar para ello.
+En el menú correspondiente, seleccionaremos la opción de **Firmar**. A continuación, el sistema nos solicitará que indiquemos el archivo que deseamos firmar. En este caso, será necesario elegir **ficherovalide.txt** y, además, especificar el certificado que utilizaremos para llevar a cabo la firma.
 
 Si todo ha salido correctamente nos saldrá el siguiente mensaje:
 
 ![image](/assets/img/posts/certificado/ficherovalide.png)
 
-Como se puede apreciar, se ha indicado que la firma se ha realizado correctamente, por lo que pulsaremos en **Guardar Firma** para así almacenar en nuestra máquina el fichero resultante de dicho proceso. En mi caso, he decidido asignarle el nombre `ficherovalide.txt_firmado.csig`, para así diferenciarlo.
+Una vez completado el proceso, se confirma que la firma se ha realizado con éxito. En este punto, procederemos a **Guardar Firma** para almacenar en nuestro equipo el archivo generado. En mi caso, he optado por nombrarlo **ficherovalide.txt_firmado.csig** con el fin de distinguirlo fácilmente.  
 
-Bien, ya hemos firmado uno de los dos, así que para el siguiente, volveremos a la aplicación de escritorio AutoFirma y elegiremos en éste caso el fichero `ficheroautofirma.txt`. Tras ello, pulsaremos en Firmar y nos pedirá el certificado a usar para la firma, seguido de la ruta donde almacenar el fichero resultante, que en este caso, he decidido asignarle el nombre `ficheroautofirma.txt_firmado.csig`.
+Con esto, ya hemos firmado el primer archivo. Ahora, repetiremos el procedimiento con el segundo. Abriremos nuevamente la aplicación de escritorio **AutoFirma** y seleccionaremos, en esta ocasión, el archivo **ficheroautofirma.txt**. Al pulsar en **Firmar**, se nos solicitará el certificado a utilizar y, posteriormente, la ubicación donde deseamos guardar el documento firmado. Para diferenciarlo, he decidido asignarle el nombre **ficheroautofirma.txt_firmado.csig**.
 
 Si todo ha funcionado correctamente obtendremos el siguiente mensaje informativo:
 
@@ -362,7 +362,7 @@ organizationalUnitName          = Informatica
 
 Importante recalcar que estas solo son las modificaciones que yo he realizado, no es el fichero de configuración al completo.
 
-Tras ello, ya tendremos todo listo para generar nuestro par de claves y un fichero de solicitud de firma de certificado que posteriormente nos autofirmaremos, ejecutando para ello el comando:
+Una vez completados estos pasos, estaremos preparados para generar nuestro par de claves junto con un archivo de solicitud de firma de certificado. Posteriormente, procederemos a su autofirma. Para ello, ejecutaremos el siguiente comando:
 
 ```bash
 debian@https:~/CA$ sudo openssl req -new -newkey rsa:2048 -keyout private/cakey.pem -out careq.pem -config ./openssl.cnf
@@ -450,7 +450,7 @@ Durante la ejecución, OpenSSL solicita:
 2. Confirmación de la información del certificado antes de firmarlo.
 3. Aprobación final para guardar el certificado.
 
-Para verificar que el certificado de la autoridad certificadora se encuentra contenido en el directorio actual, listaremos el contenido del mismo haciendo uso del comando:
+Para asegurarnos de que el certificado de la autoridad certificadora está presente en el directorio actual, procederemos a listar su contenido utilizando el siguiente comando:
 
 ```bash
 debian@https:~/CA$ ls -l
@@ -608,7 +608,7 @@ drwxr-xr-x 6 root   root   4096 Jan 11 12:38 CA
 -rw-r--r-- 1 root   root   1773 Jan 14 17:00 pablomh.csr
 ```
 
-Como vemos existe un fichero de nombre `pablomh.csr` que debemos enviar a nuestro compañero, para que así sea firmado por la correspondiente autoridad certificadora que ha creado. Además de dicho certificado firmado, nos debe enviar la clave pública de la entidad certificadora, es decir, el certificado de la misma, para así poder verificar su firma sobre nuestro certificado.
+En el directorio podemos observar un archivo llamado **pablomh.csr**, el cual debemos enviar a nuestro compañero para que sea firmado por la autoridad certificadora que ha creado. Junto con el certificado firmado, nuestro compañero también deberá enviarnos la clave pública de la entidad certificadora, es decir, su certificado, ya que será necesario para verificar la firma aplicada a nuestro certificado.
 
 Bien, pues Jose ya me ha enviado ambos ficheros, los cuales voy a almacenar en `/etc/ssl/certs/`.
 
@@ -623,17 +623,17 @@ debian@https:~$ ls -l /etc/ssl/certs/ | grep 'cacert'
 
 Debe existir un fichero de nombre tunombre.crt que es el resultado de la firma de la solicitud de firma de certificado que previamente le hemos enviado, y otro de nombre cacert.pem, que es el certificado de la entidad certificadora, con el que posteriormente se comprobará la firma de la autoridad certificadora sobre dicho certificado del servidor.
 
-Al igual que apache2 incluía un VirtualHost por defecto para las peticiones entrantes por el puerto 80 (HTTP), contiene otro por defecto para las peticiones entrantes por el puerto 443 (HTTPS), de nombre default-ssl, que por defecto viene deshabilitado, así que procederemos a modificarlo teniendo en cuenta las siguientes directivas:
+Al igual que Apache2 incluye un **VirtualHost** predeterminado para gestionar las solicitudes en el puerto **80** (HTTP), también dispone de otro por defecto para las conexiones entrantes en el puerto **443** (HTTPS). Este VirtualHost, llamado **default-ssl**, viene deshabilitado por defecto, por lo que será necesario activarlo y modificar su configuración.  
 
-- ServerName: Al igual que en el VirtualHost anterior, tendremos que indicar el nombre de dominio a través del cuál accederemos al servidor.
+Para ello, ajustaremos las siguientes directivas esenciales:  
 
-- SSLEngine: Activa el motor SSL, necesario para hacer uso de HTTPS, por lo que su valor debe ser on.
+- **ServerName**: Especifica el dominio a través del cual accederemos al servidor, manteniéndolo coherente con la configuración del VirtualHost de HTTP.  
+- **SSLEngine**: Habilita el motor SSL, requisito indispensable para el uso de HTTPS. Su valor debe establecerse en **on**.  
+- **SSLCertificateFile**: Define la ruta del certificado del servidor firmado por la autoridad certificadora (CA). En este caso, el archivo se encuentra en **/etc/ssl/certs/pablomh.crt**.  
+- **SSLCertificateKeyFile**: Indica la ubicación de la clave privada correspondiente al certificado del servidor. Se encuentra en **/etc/ssl/private/pablomh.key**.  
+- **SSLCACertificateFile**: Especifica la ruta del certificado de la autoridad certificadora, necesario para verificar la firma del certificado del servidor. En este caso, se ubica en **/etc/ssl/certs/cacert.pem**.  
 
-- SSLCertificateFile: Indicamos la ruta del certificado del servidor firmado por la CA. En este caso, /etc/ssl/certs/pablomh.crt.
-
-- SSLCertificateKeyFile: Indicamos la ruta de la clave privada asociada al certificado del servidor. En este caso, /etc/ssl/private/pablomh.key.
-
-- SSLCACertificateFile: Indicamos la ruta del certificado de la CA con el que comprobaremos la firma de nuestro certificado. En este caso, /etc/ssl/certs/cacert.pem.
+Con estas configuraciones correctamente aplicadas, el VirtualHost estará listo para gestionar conexiones seguras mediante HTTPS.
 
 Quedando el archivo final de la siguiente forma:
 
@@ -660,7 +660,7 @@ debian@https:~$ cat /etc/apache2/sites-available/default-ssl.conf
 </VirtualHost>
 ```
 
-Dado que éste VirtualHost no viene habilitado por defecto, tendremos que hacerlo manualmente:
+Como este **VirtualHost** no está habilitado de manera predeterminada, será necesario activarlo manualmente. Para ello, utilizaremos las herramientas proporcionadas por Apache2 para gestionar la activación de sitios y configuraciones:
 
 ```bash
 debian@https:~# sudo a2ensite default-ssl
@@ -669,7 +669,9 @@ To activate the new configuration, you need to run:
   systemctl reload apache2
 ```
 
-Además, lo que queremos hacer es forzar el uso de HTTPS (https://), de manera que estableceremos una redirección permanente en el VirtualHost accesible en el puerto 80 para que se así no se permita servir la página por HTTP (http://). De forma que tendremos que hacer lo siguiente en el fichero:
+Para garantizar que el acceso a la página siempre se realice de forma segura a través de HTTPS (https://), deberemos establecer una redirección permanente desde el VirtualHost que escucha en el puerto 80 (HTTP) hacia el VirtualHost en el puerto 443 (HTTPS). Esto impedirá que los usuarios accedan al servidor utilizando HTTP y los forzará a usar HTTPS.
+
+En el archivo de configuración del VirtualHost en el puerto 80, añadiremos una redirección permanente utilizando la directiva Redirect. Deberá quedar algo similar a lo siguiente:
 
 ```bash
 debian@https:~$ cat /etc/apache2/sites-available/000-default.conf
@@ -685,6 +687,7 @@ debian@https:~$ cat /etc/apache2/sites-available/000-default.conf
         Redirect 301 / https://pablo.iesgn.com/
 </VirtualHost>
 ```
+Esta directiva Redirect permanent redirigirá todas las peticiones que lleguen al servidor a través del puerto 80 hacia el mismo dominio pero utilizando el puerto 443, lo cual asegura que todas las conexiones se realicen de manera segura mediante HTTPS. Con esta configuración, cualquier intento de acceso por HTTP será automáticamente redirigido a HTTPS.
 
 Reiniciamos:
 
