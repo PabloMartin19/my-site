@@ -1185,7 +1185,7 @@ PING youtube-ui.l.google.com (216.58.206.78) 56(84) bytes of data.
 rtt min/avg/max/mdev = 42.871/43.247/43.624/0.376 ms
 ```
 
-Finalmente comprueba que todo el escenario está funcionando después de reiniciar la **máquina1 (luffy)**.
+Finalmente comprueba que todo el escenario está funcionando después de reiniciar la **máquina1 (luffy)**:
 
 ```bash
 pablo@luffy:~$ sudo reboot
