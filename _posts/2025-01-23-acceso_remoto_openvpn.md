@@ -4,7 +4,7 @@ date: 2025-01-23 12:00:00 +0000
 categories: [Seguridad, VPN]
 tags: [VPN]
 author: pablo
-description: "...."
+description: "Las VPNs son esenciales para garantizar conexiones seguras a redes privadas a través de Internet. En este artículo exploramos cómo configurar una VPN de acceso remoto con OpenVPN en un entorno de simulación con GNS3. Utilizaremos certificados x509 generados con OpenSSL para autenticar clientes y establecer túneles cifrados, permitiendo el acceso seguro a recursos internos desde cualquier ubicación."
 toc: true
 comments: true
 image:
