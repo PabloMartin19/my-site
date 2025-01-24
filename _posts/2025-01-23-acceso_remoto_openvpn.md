@@ -510,6 +510,8 @@ debian@cliente1:~$ ip a
        valid_lft forever preferred_lft forever
 ```
 
+## Comprobación
+
 Para comprobar que el cliente puede alcanzar la red remota 192.168.2.0/24 a través del servidor VPN, se usa traceroute:
 
 ```bash
