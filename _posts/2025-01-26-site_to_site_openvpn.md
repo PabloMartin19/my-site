@@ -389,7 +389,7 @@ debian@ServidorCasa:~$ ip a
 ```
 
 
-## Congiguración del ServidorInsti
+## Configuración del ServidorInsti
 
 En ServidorInsti, aseguramos que los certificados y claves tengan los permisos correctos y sean propiedad de `root`:
 
