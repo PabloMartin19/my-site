@@ -4,7 +4,7 @@ date: 2025-01-26 17:00:00 +0000
 categories: [Seguridad, VPN]
 tags: [VPN]
 author: pablo
-description: "...."
+description: "En esta práctica configuraremos una VPN con OpenVPN en GNS3, implementando tanto una VPN de acceso remoto como una VPN sitio a sitio. Usaremos autenticación con certificados x509 generados con OpenSSL y configuraremos el enrutamiento para permitir la comunicación entre redes a través del túnel VPN. Este ejercicio es útil para comprender el funcionamiento de las VPNs y mejorar la seguridad en redes."
 toc: true
 comments: true
 image:
