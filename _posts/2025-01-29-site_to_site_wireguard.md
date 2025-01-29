@@ -1,6 +1,6 @@
 ---
 title: "VPN sitio a sitio con WireGuard"
-date: 2025-01-29 20:00:00 +0000
+date: 2025-01-29 19:00:00 +0000
 categories: [Seguridad, VPN]
 tags: [VPN]
 author: pablo
