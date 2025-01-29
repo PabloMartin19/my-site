@@ -8,7 +8,7 @@ description: "En esta práctica implementamos una solución VPN utilizando WireG
 toc: true
 comments: true
 image:
-  path: /assets/img/posts/vpn/portada2.jpg
+  path: /assets/img/posts/vpn/portada2.png
 ---
 
 ## Escenario
