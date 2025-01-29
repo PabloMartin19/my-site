@@ -45,7 +45,7 @@ Antes de comenzar, cada máquina debe tener acceso a Internet para instalar Open
 sudo apt update && sudo apt install openvpn easy-rsa -y
 ```
 
-Una vez instalado estos dos paquetes en las máquinas que nos permitirán realizar la conexión VPN, tendremos que activar el bit de forwarding que nos permitirá dejar pasar los paquete a través de las máquinas (tanto la máquina ServidorCasa como la máquina ServidorInsti) para así permitir la conexión entre los dos clientes.
+Una vez instalado estos dos paquetes en las máquinas que nos permitirán realizar la conexión VPN, tendremos que activar el bit de forwarding que nos permitirá dejar pasar los paquetes a través de las máquinas (tanto la máquina ServidorCasa como la máquina ServidorInsti) para así permitir la conexión entre los dos clientes.
 
 ```bash
 debian@ServidorCasa:~$ sudo sysctl -p
