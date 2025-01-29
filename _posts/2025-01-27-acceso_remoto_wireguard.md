@@ -4,7 +4,7 @@ date: 2025-01-27 20:00:00 +0000
 categories: [Seguridad, VPN]
 tags: [VPN]
 author: pablo
-description: "..."
+description: "En este artículo exploraremos cómo configurar una VPN de acceso remoto utilizando WireGuard, una solución moderna y eficiente.  Los clientes que se conectarán a la VPN estarán en sistemas operativos Linux, Android y Windows, permitiendo así el acceso seguro a los recursos internos desde diversas plataformas y ubicaciones."
 toc: true
 comments: true
 image:
