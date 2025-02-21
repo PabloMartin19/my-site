@@ -31,7 +31,7 @@ En lugar de seleccionar la opción estándar Install, elegimos "Advanced options
 
 Una vez elegida esta opción, seguimos con las instalación en donde primero de todo debemos elegir el idioma:
 
-![image](/assets/img/posts/systemd-boot/uefi.png)
+![image](/assets/img/posts/systemd-boot/idioma.png)
 
 Durante la instalación en modo experto de Debian 13, el instalador puede ofrecer una opción llamada "Detectar y montar el medio de instalación". Esta opción es especialmente útil si estamos utilizando una instalación por red o un medio de instalación que no es el disco duro local (por ejemplo, un USB o una ISO montada). Por lo tanto, seleccionamos la que nos muestra automáticamente.
 
