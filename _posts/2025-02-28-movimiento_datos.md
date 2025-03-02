@@ -4,7 +4,7 @@ date: 2025-02-28 20:33:00 +0000
 categories: [Base de Datos]
 tags: []
 author: pablo
-description: "..."
+description: "En esta práctica, exploraremos diferentes técnicas de exportación e importación de datos entre bases de datos utilizando herramientas de Oracle, MySQL, PostgreSQL y MongoDB. Comenzaremos con la exportación e importación de un esquema de Oracle utilizando Oracle Data Pump, donde se aplicarán filtros específicos y se automatizará la operación. Además, compararemos estos procesos con las herramientas de línea de comandos de MySQL y PostgreSQL, y abordaremos la carga de datos de un archivo de texto a Oracle mediante SQL*Loader, cubriendo todos los pasos y ficheros involucrados en el proceso."
 toc: true
 comments: true
 image:
