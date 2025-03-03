@@ -1079,6 +1079,321 @@ Con esto, las copias de seguridad se realizarán automáticamente a las 22:00 to
 
 Documenta el empleo de las herramientas de copia de seguridad y restauración de MySQL.
 
+Para realizar copias de seguridad y restauraciones en MySQL, utilizamos la herramienta mysqldump. En nuestro caso, vamos a 
+hacer una copia de todas las bases de datos del servidor y luego restaurarlas en caso de ser necesario.
+
+Para generar un respaldo de todas las bases de datos, ejecutamos el siguiente comando:
+
+```bash
+pablo@servidor-mariadb:~$ sudo mysqldump -u root -p --all-databases > respaldo.sql
+```
+
+Una vez finalizado el proceso, podemos comprobar que el archivo de copia se ha generado correctamente:
+```bash
+pablo@servidor-mariadb:~$ ls -lh respaldo.sql
+-rw-r--r-- 1 pablo pablo 5,7M mar  3 08:28 respaldo.sql
+```
+
+Para comprobar que la restauración funciona correctamente, vamos a eliminar algunas bases de datos:
+```sql
+pablo@servidor-mariadb:~$ sudo mysql
+Welcome to the MariaDB monitor.  Commands end with ; or \g.
+Your MariaDB connection id is 33
+Server version: 10.11.6-MariaDB-0+deb12u1-log Debian 12
+
+Copyright (c) 2000, 2018, Oracle, MariaDB Corporation Ab and others.
+
+Type 'help;' or '\h' for help. Type '\c' to clear the current input statement.
+
+MariaDB [(none)]> SHOW DATABASES;
++--------------------+
+| Database           |
++--------------------+
+| Examen             |
+| datoscsv           |
+| empresa            |
+| empresa_copia      |
+| empresa_datos      |
+| empresa_vacia      |
+| information_schema |
+| mysql              |
+| performance_schema |
+| practica1_abd      |
+| sakila             |
+| scott              |
+| sys                |
++--------------------+
+13 rows in set (0,001 sec)
+
+MariaDB [(none)]> DROP DATABASE empresa_copia;
+Query OK, 2 rows affected (0,038 sec)
+
+MariaDB [(none)]> DROP DATABASE empresa_datos;
+Query OK, 2 rows affected (0,014 sec)
+
+MariaDB [(none)]> DROP DATABASE empresa_vacia;
+Query OK, 2 rows affected (0,016 sec)
+```
+
+Ya hemos eliminado varias bases de datos, por lo tanto, para recuperar todas las bases de datos eliminadas, utilizamos el 
+archivo de respaldo que creamos anteriormente:
+```bash
+pablo@servidor-mariadb:~$ sudo mysql -u root -p < respaldo.sql
+```
+
+Una vez finalizada la restauración, verificamos que las bases de datos han sido recuperadas:
+```sql
+pablo@servidor-mariadb:~$ sudo mysql
+Welcome to the MariaDB monitor.  Commands end with ; or \g.
+Your MariaDB connection id is 35
+Server version: 10.11.6-MariaDB-0+deb12u1-log Debian 12
+
+Copyright (c) 2000, 2018, Oracle, MariaDB Corporation Ab and others.
+
+Type 'help;' or '\h' for help. Type '\c' to clear the current input statement.
+
+MariaDB [(none)]> SHOW DATABASES;
++--------------------+
+| Database           |
++--------------------+
+| Examen             |
+| datoscsv           |
+| empresa            |
+| empresa_copia      |
+| empresa_datos      |
+| empresa_vacia      |
+| information_schema |
+| mysql              |
+| performance_schema |
+| practica1_abd      |
+| sakila             |
+| scott              |
+| sys                |
++--------------------+
+13 rows in set (0,001 sec)
+MariaDB [(none)]> USE empresa_copia;
+Reading table information for completion of table and column names
+You can turn off this feature to get a quicker startup with -A
+
+Database changed
+MariaDB [empresa_copia]> SHOW TABLES;
++-------------------------+
+| Tables_in_empresa_copia |
++-------------------------+
+| departamentos           |
+| empleados               |
++-------------------------+
+2 rows in set (0,001 sec)
+```
+
+Y como podemos ver, las tablas y los datos se han restaurado correctamente.
+
+Para asegurarnos de que se realicen copias de seguridad de forma automática todos los días, creamos un servicio en systemd 
+que ejecutará el comando `mysqldump` y guardará la copia con la fecha y la hora en el nombre del archivo.
+
+```bash
+pablo@servidor-mariadb:~$ sudo cat /etc/systemd/system/backup_mysql.service
+[Unit]
+Description=Copia de seguridad de MySQL
+
+[Service]
+Type=oneshot
+ExecStart=/bin/bash -c 'mysqldump -u root -p --all-databases > /home/debian/backups/mysql_backup_$(date +"%Y%m%d%H%M%S").sql'
+
+[Install]
+WantedBy=multi-user.target
+```
+
+Guardamos los cambios y creamos un temporizador para que la copia se realice automáticamente todos los días a las 03:00.
+```bash
+pablo@servidor-mariadb:~$ sudo cat /etc/systemd/system/backup_mysql.timer
+[Unit]
+Description=Temporizador para la copia de seguridad de MySQL
+
+[Timer]
+OnCalendar=*-*-* 03:00:00
+Persistent=true
+
+[Install]
+WantedBy=timers.target
+```
+
+Guardamos el archivo, recargamos systemd, habilitamos y activamos el temporizador:
+```bash
+pablo@servidor-mariadb:~$ sudo systemctl daemon-reload
+pablo@servidor-mariadb:~$ sudo systemctl enable backup_mysql.timer
+Created symlink /etc/systemd/system/timers.target.wants/backup_mysql.timer → /etc/systemd/system/backup_mysql.timer.
+pablo@servidor-mariadb:~$ sudo systemctl start backup_mysql.timerPodemos comprobar que el temporizador está activo con:
+```
+
+Podemos comprobar que el temporizador está activo con:
+```bash
+pablo@servidor-mariadb:~$ sudo systemctl list-timers --all
+NEXT                        LEFT          LAST                        PASSED              UNIT                         ACTIVATES                     
+Mon 2025-03-03 11:57:51 CET 3h 15min left Mon 2025-01-20 13:29:53 CET 1 month 11 days ago man-db.timer                 man-db.service
+Mon 2025-03-03 21:34:40 CET 12h left      Mon 2025-03-03 08:34:57 CET 7min ago            apt-daily.timer              apt-daily.service
+Tue 2025-03-04 00:00:00 CET 15h left      -                           -                   dpkg-db-backup.timer         dpkg-db-backup.service
+Tue 2025-03-04 00:00:00 CET 15h left      Mon 2025-03-03 08:25:50 CET 16min ago           logrotate.timer              logrotate.service
+Tue 2025-03-04 03:00:00 CET 18h left      -                           -                   backup_mysql.timer           backup_mysql.service
+Tue 2025-03-04 06:21:11 CET 21h left      Mon 2025-03-03 08:29:27 CET 13min ago           apt-daily-upgrade.timer      apt-daily-upgrade.service
+Tue 2025-03-04 08:40:47 CET 23h left      Mon 2025-03-03 08:40:47 CET 1min 40s ago        systemd-tmpfiles-clean.timer systemd-tmpfiles-clean.service
+Sun 2025-03-09 03:10:08 CET 5 days left   Sun 2025-03-02 15:51:15 CET 16h ago             e2scrub_all.timer            e2scrub_all.service
+Mon 2025-03-10 00:06:34 CET 6 days left   Mon 2025-03-03 08:41:36 CET 51s ago             fstrim.timer                 fstrim.service
+
+9 timers listed.
+```
+
+Con esta configuración, aseguramos que las copias de seguridad se realicen automáticamente y podamos restaurarlas en caso de pérdida de datos.
+
 ## Ejercicio 8
 
 Documenta el empleo de las herramientas de copia de seguridad y restauración de MongoDB.
+
+En este caso, vamos a realizar una copia de seguridad de la base de datos tienda en MongoDB utilizando el comando mongodump. 
+Posteriormente, eliminaremos la base de datos y la restauraremos utilizando mongorestore. Además, configuraremos un servicio y un 
+temporizador en systemd para automatizar la realización de copias de seguridad diarias.
+
+
+Primero, ejecutamos el comando `mongodump` para crear una copia de seguridad de la base de datos tienda. 
+Utilizamos las credenciales del usuario pavlo, que tiene permisos para acceder a la base de datos. La copia se guardará en un 
+directorio específico con la fecha y hora actuales.
+
+```bash
+pablo@servidor-mongo:~$ mongodump -u pavlo -p pavlo --db tienda --authenticationDatabase admin --out /home/pablo/copia_mongo/copia$(date +%Y%m%d%H%M%S)
+2025-03-03T08:57:01.729+0100	writing tienda.productos to /home/pablo/copia_mongo/copia20250303085701/tienda/productos.bson
+2025-03-03T08:57:01.730+0100	done dumping tienda.productos (5 documents)
+```
+
+Este comando generará archivos `.bson` y `.metadata.json` en la ruta especificada, conteniendo los datos y metadatos de las colecciones de la base de datos tienda.
+
+```bash
+pablo@servidor-mongo:~$ ls -lh copia_mongo/
+total 4,0K
+drwxr-xr-x 3 pablo pablo 4,0K mar  3 08:57 copia20250303085701
+pablo@servidor-mongo:~$ ls -lh copia_mongo/copia20250303085701/
+total 4,0K
+drwxr-xr-x 2 pablo pablo 4,0K mar  3 08:57 tienda
+pablo@servidor-mongo:~$ ls -lh copia_mongo/copia20250303085701/tienda/
+total 8,0K
+-rw-r--r-- 1 pablo pablo 501 mar  3 08:57 productos.bson
+-rw-r--r-- 1 pablo pablo 298 mar  3 08:57 productos.metadata.json
+```
+
+Para simular una situación en la que necesitamos restaurar la base de datos, primero la eliminaremos. Nos conectamos a MongoDB usando `mongosh` y ejecutamos el comando `db.dropDatabase()`.
+```js
+pablo@servidor-mongo:~$ mongosh -u pavlo -p pavlo --authenticationDatabase admin
+Current Mongosh Log ID:	67c56120c2c54a2a69fe6910
+Connecting to:		mongodb://<credentials>@127.0.0.1:27017/?directConnection=true&serverSelectionTimeoutMS=2000&authSource=admin&appName=mongosh+2.3.2
+Using MongoDB:		6.0.18
+Using Mongosh:		2.3.2
+mongosh 2.4.0 is available for download: https://www.mongodb.com/try/download/shell
+
+For mongosh info see: https://www.mongodb.com/docs/mongodb-shell/
+
+------
+   The server generated these startup warnings when booting
+   2025-03-03T08:49:29.506+01:00: Using the XFS filesystem is strongly recommended with the WiredTiger storage engine. See http://dochub.mongodb.org/core/prodnotes-filesystem
+   2025-03-03T08:49:29.819+01:00: /sys/kernel/mm/transparent_hugepage/enabled is 'always'. We suggest setting it to 'never' in this binary version
+   2025-03-03T08:49:29.819+01:00: vm.max_map_count is too low
+------
+
+test> use tienda;
+switched to db tienda
+tienda> db.dropDatabase()
+{ ok: 1, dropped: 'tienda' }
+```
+
+Esto eliminará la base de datos tienda y todas sus colecciones.
+
+Ahora, utilizaremos el comando `mongorestore` para restaurar la base de datos a partir de la copia de seguridad que creamos anteriormente. Especificamos la ruta donde se encuentra la copia y las credenciales del usuario.
+```bash
+pablo@servidor-mongo:~$ mongorestore -u pavlo -p pavlo --db tienda --authenticationDatabase admin /home/pablo/copia_mongo/copia20250303085701/tienda/
+2025-03-03T09:00:29.797+0100	The --db and --collection flags are deprecated for this use-case; please use --nsInclude instead, i.e. with --nsInclude=${DATABASE}.${COLLECTION}
+2025-03-03T09:00:29.798+0100	building a list of collections to restore from /home/pablo/copia_mongo/copia20250303085701/tienda dir
+2025-03-03T09:00:29.798+0100	reading metadata for tienda.productos from /home/pablo/copia_mongo/copia20250303085701/tienda/productos.metadata.json
+2025-03-03T09:00:29.823+0100	restoring tienda.productos from /home/pablo/copia_mongo/copia20250303085701/tienda/productos.bson
+2025-03-03T09:00:29.834+0100	finished restoring tienda.productos (5 documents, 0 failures)
+2025-03-03T09:00:29.835+0100	restoring indexes for collection tienda.productos from metadata
+2025-03-03T09:00:29.836+0100	index: &idx.IndexDocument{Options:primitive.M{"name":"precio_1_categoria_1", "v":2}, Key:primitive.D{primitive.E{Key:"precio", Value:1}, primitive.E{Key:"categoria", Value:1}}, PartialFilterExpression:primitive.D(nil)}
+2025-03-03T09:00:29.860+0100	5 document(s) restored successfully. 0 document(s) failed to restore.
+```
+
+Este comando leerá los archivos `.bson` y `.metadata.json` y restaurará las colecciones y sus datos en la base de datos tienda.
+
+Como podemos ver, se ha restaurado correctamente:
+```js
+pablo@servidor-mongo:~$ mongosh -u pavlo -p pavlo --authenticationDatabase admin
+Current Mongosh Log ID:	67c561a3dde0282076fe6910
+Connecting to:		mongodb://<credentials>@127.0.0.1:27017/?directConnection=true&serverSelectionTimeoutMS=2000&authSource=admin&appName=mongosh+2.3.2
+Using MongoDB:		6.0.18
+Using Mongosh:		2.3.2
+mongosh 2.4.0 is available for download: https://www.mongodb.com/try/download/shell
+
+For mongosh info see: https://www.mongodb.com/docs/mongodb-shell/
+
+------
+   The server generated these startup warnings when booting
+   2025-03-03T08:49:29.506+01:00: Using the XFS filesystem is strongly recommended with the WiredTiger storage engine. See http://dochub.mongodb.org/core/prodnotes-filesystem
+   2025-03-03T08:49:29.819+01:00: /sys/kernel/mm/transparent_hugepage/enabled is 'always'. We suggest setting it to 'never' in this binary version
+   2025-03-03T08:49:29.819+01:00: vm.max_map_count is too low
+------
+
+test> show dbs;
+admin            424.00 KiB
+biblioteca       100.00 KiB
+config           108.00 KiB
+ex_usuario       200.00 KiB
+examen           200.00 KiB
+kk               200.00 KiB
+local             80.00 KiB
+nueva_tienda      40.00 KiB
+practica1_abd    120.00 KiB
+prueba           120.00 KiB
+pruebas          184.00 KiB
+restaurantes_db   60.00 KiB
+tienda            60.00 KiB
+```
+
+Para asegurarnos de que las copias de seguridad se realicen automáticamente cada día, crearemos un servicio y un temporizador en systemd.
+
+Primero, creamos un archivo de servicio en `/etc/systemd/system/mongo_copia.service` con el siguiente contenido:
+```bash
+[Unit]
+Description=Realiza copias de seguridad de la base de datos tienda en MongoDB
+
+[Service]
+Type=oneshot
+ExecStart=/bin/bash -c 'mongodump -u pavlo -p pavlo --db tienda --authenticationDatabase admin --out /home/pablo/copia_mongo/copia$(date +%%Y%%m%%d%%H%%M%%S)'
+```
+
+Este servicio ejecutará el comando `mongodump` para crear una copia de seguridad de la base de datos tienda en una carpeta con la fecha y hora actuales.
+
+A continuación, creamos un archivo de temporizador en `/etc/systemd/system/mongo_copia.timer` con el siguiente contenido:
+```sh
+[Unit]
+Description=Ejecuta el servicio de copia de seguridad de MongoDB diariamente a las 03:00
+
+[Timer]
+OnCalendar=*-*-* 03:00:00
+Persistent=true
+
+[Install]
+WantedBy=timers.target
+```
+
+Este temporizador programará la ejecución del servicio `mongo_copia.service` todos los días a las 03:00.
+
+Finalmente, recargamos el demonio de systemd, habilitamos y activamos el temporizador:
+```sh
+pablo@servidor-mongo:~$ sudo systemctl daemon-reload
+pablo@servidor-mongo:~$ sudo systemctl enable mongo_copia.timer
+Created symlink /etc/systemd/system/timers.target.wants/mongo_copia.timer → /etc/systemd/system/mongo_copia.timer.
+pablo@servidor-mongo:~$ sudo systemctl start mongo_copia.timer
+```
+
+Podemos comprobar que el temporizador está activo con:
+
+```sh
+pablo@servidor-mongo:~$ sudo systemctl list-timers --all | grep mongo
+Tue 2025-03-04 03:00:00 CET 17h left      -                           -                  mongo_copia.timer            mongo_copia.service
+```
