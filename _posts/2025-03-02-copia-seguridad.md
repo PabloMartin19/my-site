@@ -1,8 +1,8 @@
 ---
 title: "Copias de Seguridad y Restauración"
 date: 2025-03-02 23:35:00 +0000
-categories: [Base de Datos]
-tags: []
+categories: [Base de Datos, Administración y Seguridad de Bases de Datos]
+tags: [Administración y Seguridad de Bases de Datos]
 author: pablo
 description: "Garantizar la integridad y disponibilidad de los datos es clave en cualquier sistema. En esta práctica, se explorarán copias de seguridad lógicas y físicas en Oracle, PostgreSQL, MySQL y MongoDB, aplicando compresión, cifrado y segmentación. También se abordará la recuperación ante desastres mediante la restauración de ficheros de datos y control, incluyendo el uso de RMAN en entornos con ArchiveLog habilitado."
 toc: true

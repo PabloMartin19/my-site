@@ -1,8 +1,8 @@
 ---
 title: "Auditoría"
 date: 2025-02-25 20:00:00 +0000
-categories: [Base de Datos]
-tags: []
+categories: [Base de Datos, Administración y Seguridad de Bases de Datos]
+tags: [Administración y Seguridad de Bases de Datos]
 author: pablo
 description: "La auditoría en bases de datos es una herramienta esencial para garantizar la seguridad y el control sobre las 
   operaciones que se realizan en un sistema. En este artículo, exploraremos cómo configurar y verificar la auditoría en diferentes bases de datos como Oracle, PostgreSQL, MySQL y MongoDB. Analizaremos desde el registro de accesos fallidos hasta la supervisión de operaciones específicas, proporcionando ejemplos prácticos para cada uno de los sistemas mencionados."
